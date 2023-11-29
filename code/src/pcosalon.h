@@ -167,8 +167,10 @@ protected:
     GraphicSalonInterface *_interface;
 
     PcoMutex _mutex;
-    
-    // TODO
+
+    PcoConditionVariable       _isFree, _isFull;
+    std::vector<std::uint32_t> _clients;
+    std::size_t                _capacity, _size, _head, _tail;
 };
 
 #endif // PCOSALON_H

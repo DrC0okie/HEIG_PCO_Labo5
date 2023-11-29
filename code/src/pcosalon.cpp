@@ -14,7 +14,13 @@
 #include <iostream>
 
 PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int capacity)
-    : _interface(interface)
+    : _interface(interface),
+      _isFree(true),
+      _isFull(false),
+      _clients(capacity),
+      _size(0),
+      _head(0),
+      _tail(0)
 {
     // TODO
 }
