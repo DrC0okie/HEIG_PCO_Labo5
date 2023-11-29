@@ -1,0 +1,77 @@
+%! suppress = MissingLabel
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[main=english]{babel}
+\usepackage{url}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage[a4paper, margin=2cm, footskip=18.3pt]{geometry}
+\usepackage{listings}
+\usepackage[usenames]{color}
+
+\newcommand{\header} {
+    \setlength{\headheight}{30pt}\pagestyle{fancy}
+    \fancyhead[L]{\includegraphics[height=20pt]{~/Templates/heig-logo}}\fancyhead[C]{PCO 2023\\ Lab 5}
+    \fancyhead[R]{Timothée Van Hove \& Aubry Mangold\\\today}\fancyfoot[C]{}
+    \fancyfoot[R]{Page \thepage~sur \pageref{LastPage}}\renewcommand{\footrulewidth}{0.3pt}
+}
+
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+    language=C++,
+    aboveskip=3mm,
+    belowskip=3mm,
+    showstringspaces=false,
+    columns=flexible,
+    basicstyle={\small\ttfamily},
+    numbers=left,
+    numberstyle=\tiny\color{mygray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{mygreen},
+    stringstyle=\color{mymauve},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4
+}
+
+\begin{document}
+    \header
+
+
+    \section{Introduction}
+
+
+    \section{Analysis}
+
+
+    \section{Conception}
+
+
+    \section{Implementation}
+
+    % Listing
+    \begin{lstlisting}[caption={The shared section access routine.}, captionpos=b, label=lst:1]
+    \end{lstlisting}
+
+
+    \section{Tests}
+
+
+    \section{Conclusion}
+
+    \section*{Appendix}
+
+
+    \section{Appendix name}
+    \begin{figure}[!htb]
+        \centering
+        \includegraphics[width=0.6\textwidth]{./doc/assets/}
+        \caption{Train route 1}
+    \end{figure}
+
+\end{document}
