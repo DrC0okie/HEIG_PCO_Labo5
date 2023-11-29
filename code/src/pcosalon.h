@@ -168,8 +168,9 @@ protected:
     PcoMutex _mutex;
 
     PcoConditionVariable       _isFree, _isFull;
-    std::vector<std::uint32_t> _clients;
-    std::size_t                _capacity, _size, _head, _tail;
+    std::queue<std::uint32_t>  _clients;
+    std::size_t                _capacity;
+//    std::size_t                _size; // FIXME: replace with a simple bool ?
 };
 
 #endif // PCOSALON_H
