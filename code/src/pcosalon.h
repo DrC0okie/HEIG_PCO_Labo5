@@ -5,7 +5,7 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Rien à modifier
+// Rien à modifier (ne pas modifier l'interface)
 
 #ifndef PCOSALON_H
 #define PCOSALON_H
