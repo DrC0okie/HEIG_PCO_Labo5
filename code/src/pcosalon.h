@@ -11,14 +11,13 @@
 #define PCOSALON_H
 
 #include <pcosynchro/pcoconditionvariable.h>
-#include <pcosynchro/pcohoaremonitor.h>
 #include <pcosynchro/pcomanager.h>
 #include <vector>
 
 #include "salon.h"
 #include "utils/graphicsaloninterface.h"
 
-class PcoSalon : public Salon, PcoHoareMonitor
+class PcoSalon : public Salon
 {
 public:
     PcoSalon(GraphicSalonInterface *interface, unsigned int capacity);
