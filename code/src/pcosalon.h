@@ -169,7 +169,8 @@ protected:
     size_t currentTicket = 0; // Next ticket to be issued
     size_t nextServeTicket = 0; // Next ticket to be served
     bool barberSleeping = false;
-    bool workingChairAvailable = true;
+    bool   workingChairFree = true;
+    int firstClientId = -1;
 };
 
 #endif // PCOSALON_H

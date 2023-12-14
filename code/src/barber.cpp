@@ -13,7 +13,7 @@
 
 #include <iostream>
 
-Barber::Barber(GraphicSalonInterface                *interface,
+Barber::Barber(GraphicSalonInterface *interface,
                std::shared_ptr<SalonBarberInterface> salon)
     : _interface(interface), _salon(salon) {
     _interface->consoleAppendTextBarber("Salut, prêt à travailler !");
@@ -21,7 +21,7 @@ Barber::Barber(GraphicSalonInterface                *interface,
 
 void Barber::run() {
     while (true) {
-        if (_salon->getNbClient() == 0) {
+        if (_salon->getNbClient() <= 0) {
             _interface->consoleAppendTextBarber("Je m'endors...");
             _salon->goToSleep();
             _interface->consoleAppendTextBarber("Je me réveille !");
