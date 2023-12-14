@@ -163,7 +163,7 @@ protected:
 protected:
     GraphicSalonInterface *_interface;
     PcoMutex _mutex;
-    PcoConditionVariable barberAvailable, clientAvailable, beautifyDone;
+    PcoConditionVariable barberAvailable, clientAvailable, beautifyDone, clientOnWorkingChair;
     size_t capacity;
     size_t nbClientsInSalon = 0; // Number of clients in the salon
     size_t currentTicket = 0; // Next ticket to be issued

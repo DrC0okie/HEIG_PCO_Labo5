@@ -32,15 +32,13 @@ unsigned int PcoSalon::getNbClient() {
 bool PcoSalon::accessSalon(unsigned clientId) {
     _mutex.lock();
 
-    // The salon is full
+    // The salon is fullanimationClientSitOnChair
     if(nbClientsInSalon >= capacity) {
         _mutex.unlock();
         return false;
     }
 
     nbClientsInSalon++;
-
-    // Client takes a ticket and waits for his turn (Blocking animation)
     animationClientAccessEntrance(clientId);
 
     if(barberSleeping)
@@ -70,6 +68,9 @@ void PcoSalon::goForHairCut(unsigned clientId) {
     _mutex.lock();
     animationClientSitOnWorkChair(clientId);
 
+    // Notify the barber that the client is on the working chair
+    clientOnWorkingChair.notifyOne();
+
     // Wait for the barber to notify the job done
     beautifyDone.wait(&_mutex);
 
@@ -80,19 +81,25 @@ void PcoSalon::goForHairCut(unsigned clientId) {
 
 void PcoSalon::waitingForHairToGrow(unsigned clientId) {
     // Simulate waiting for hair to grow
+    _mutex.lock();
     animationClientWaitForHairToGrow(clientId);
+    _mutex.unlock();
 }
 
 
 void PcoSalon::walkAround(unsigned clientId) {
     // Simulate client walking around
+    _mutex.lock();
     animationClientWalkAround(clientId);
+    _mutex.unlock();
 }
 
 
 void PcoSalon::goHome(unsigned clientId) {
     // Simulate client going home
+    _mutex.lock();
     animationClientGoHome(clientId);
+    _mutex.unlock();
 }
 
 
@@ -101,9 +108,9 @@ void PcoSalon::goHome(unsigned clientId) {
  *******************************************/
 void PcoSalon::goToSleep() {
     _mutex.lock();
+    animationBarberGoToSleep();
     while (nbClientsInSalon == 0) {  // Sleep if no clients are waiting
         barberSleeping = true;
-        animationBarberGoToSleep();
         barberAvailable.wait(&_mutex);
     }
     barberSleeping = false;
@@ -115,8 +122,10 @@ void PcoSalon::pickNextClient() {
     _mutex.lock();
 
     // A client is already in the working chair
-    if(!workingChairAvailable)
+    if(!workingChairAvailable){
+        _mutex.unlock();
         return;
+    }
 
     if (nbClientsInSalon > 0) {
         // call the next client
@@ -128,7 +137,9 @@ void PcoSalon::pickNextClient() {
 
 
 void PcoSalon::waitClientAtChair() {
-    // What to do here???
+    _mutex.lock();
+    clientOnWorkingChair.wait(&_mutex);
+    _mutex.unlock();
 }
 
 
@@ -152,9 +163,11 @@ bool PcoSalon::isInService() {
 
 
 void PcoSalon::endService() {
+    _mutex.lock();
     currentTicket = 0;
     nextServeTicket = 0;
     nbClientsInSalon = 0;
+    _mutex.unlock();
 }
 
 /********************************************
