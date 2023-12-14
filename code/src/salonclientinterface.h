@@ -5,7 +5,6 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Rien à modifier
 
 #ifndef SALONCLIENTINTERFACE_H
 #define SALONCLIENTINTERFACE_H

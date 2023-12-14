@@ -14,10 +14,7 @@
 #include <iostream>
 
 PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int capacity)
-    : _interface(interface),
-      _isFree(true),
-      _isFull(false),
-      _capacity(capacity)
+    : _interface(interface), capacity(capacity + 1)
 {
     // TODO
 }
@@ -25,110 +22,139 @@ PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int capacity)
 /********************************************
  * Méthodes de l'interface pour les clients *
  *******************************************/
-unsigned int PcoSalon::getNbClient()
-{
-    // TODO return the size of the queue
+unsigned int PcoSalon::getNbClient() {
     _mutex.lock();
-    const std::size_t clientCount = _clients.size();
+    unsigned int count = nbClientsInSalon;
     _mutex.unlock();
-    return clientCount;
+    return count;
 }
 
-bool PcoSalon::accessSalon(unsigned clientId)
-{
-    // TODO corresponds to PUT
+bool PcoSalon::accessSalon(unsigned clientId) {
     _mutex.lock();
 
-    while(_clients.size() == _capacity) {
-        // Go for a walk then come back
-        _isFree.wait(&_mutex);
+    // The salon is full
+    if(nbClientsInSalon >= capacity) {
+        _mutex.unlock();
+        return false;
     }
 
-    _clients.push(clientId);
+    nbClientsInSalon++;
 
-    _isFull.notifyOne();
+    // Client takes a ticket and waits for his turn (Blocking animation)
+    animationClientAccessEntrance(clientId);
+
+    if(barberSleeping)
+        barberAvailable.notifyOne(); // Wake up the barber if sleeping
+
+    // Go directly for hair cut if the barber is available and no one is waiting
+    if (workingChairAvailable && nbClientsInSalon <= 1) {
+        workingChairAvailable = false;
+        _mutex.unlock();
+        return true;
+    }
+
+    // Else take a ticket and wait for the barber to be ready
+    size_t clientTicket = currentTicket++;
+    animationClientSitOnChair(clientId, clientTicket);
+
+    // Wait for the barber to be ready
+    while (clientTicket != nextServeTicket || nbClientsInSalon >= capacity) {
+        clientAvailable.wait(&_mutex);
+    }
+
     _mutex.unlock();
-
-    // animationClientAccessEntrance(clientId);
+    return true;
 }
 
-
-void PcoSalon::goForHairCut(unsigned clientId)
-{
-    // TODO corresponds to GET
-    if (_clients.empty())
-        return; // FIXME: check if this is necessary
-
+void PcoSalon::goForHairCut(unsigned clientId) {
     _mutex.lock();
-    while(_clients.size() < _capacity)
-        _isFull.wait(&_mutex);
+    animationClientSitOnWorkChair(clientId);
 
-    _clients.pop();
+    // Wait for the barber to notify the job done
+    beautifyDone.wait(&_mutex);
 
-    _isFree.notifyOne();
+    // Free the working chair
+    workingChairAvailable = true;
     _mutex.unlock();
-
-    // animationClientSitOnChair(clientId);
 }
 
-void PcoSalon::waitingForHairToGrow(unsigned clientId)
-{
-    // TODO Clients waits before trying to go back to the salon
-    // animationClientWaitForHairToGrow
+void PcoSalon::waitingForHairToGrow(unsigned clientId) {
+    // Simulate waiting for hair to grow
+    animationClientWaitForHairToGrow(clientId);
 }
 
 
-void PcoSalon::walkAround(unsigned clientId)
-{
-    // TODO Client waits for room in the salon
+void PcoSalon::walkAround(unsigned clientId) {
+    // Simulate client walking around
+    animationClientWalkAround(clientId);
 }
 
 
-void PcoSalon::goHome(unsigned clientId){
-    // TODO Clients goes back home at the end of the sim
+void PcoSalon::goHome(unsigned clientId) {
+    // Simulate client going home
+    animationClientGoHome(clientId);
 }
 
 
 /********************************************
  * Méthodes de l'interface pour le barbier  *
  *******************************************/
-void PcoSalon::goToSleep()
-{
-    // TODO
+void PcoSalon::goToSleep() {
+    _mutex.lock();
+    while (nbClientsInSalon == 0) {  // Sleep if no clients are waiting
+        barberSleeping = true;
+        animationBarberGoToSleep();
+        barberAvailable.wait(&_mutex);
+    }
+    barberSleeping = false;
+    animationWakeUpBarber();
+    _mutex.unlock();
+}
+
+void PcoSalon::pickNextClient() {
+    _mutex.lock();
+
+    // A client is already in the working chair
+    if(!workingChairAvailable)
+        return;
+
+    if (nbClientsInSalon > 0) {
+        // call the next client
+        nextServeTicket++;
+        clientAvailable.notifyAll();
+    }
+    _mutex.unlock();
 }
 
 
-void PcoSalon::pickNextClient()
-{
-    // TODO
-
-    // animationClientSitOnWorkChair(clientId);
+void PcoSalon::waitClientAtChair() {
+    // What to do here???
 }
 
 
-void PcoSalon::waitClientAtChair()
-{
-    // TODO
-}
+void PcoSalon::beautifyClient() {
+    _mutex.lock();
+    animationBarberCuttingHair();
 
+    // The cut is done
+    beautifyDone.notifyOne();
+    nbClientsInSalon--;
 
-void PcoSalon::beautifyClient()
-{
-    // TODO
+    _mutex.unlock();
 }
 
 /********************************************
  *    Méthodes générales de l'interface     *
  *******************************************/
-bool PcoSalon::isInService()
-{
+bool PcoSalon::isInService() {
     // TODO
 }
 
 
-void PcoSalon::endService()
-{
-    // TODO
+void PcoSalon::endService() {
+    currentTicket = 0;
+    nextServeTicket = 0;
+    nbClientsInSalon = 0;
 }
 
 /********************************************

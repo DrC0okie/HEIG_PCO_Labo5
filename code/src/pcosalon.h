@@ -12,8 +12,6 @@
 
 #include <pcosynchro/pcoconditionvariable.h>
 #include <pcosynchro/pcomanager.h>
-#include <vector>
-
 #include "salon.h"
 #include "utils/graphicsaloninterface.h"
 
@@ -164,13 +162,14 @@ protected:
 
 protected:
     GraphicSalonInterface *_interface;
-
     PcoMutex _mutex;
-
-    PcoConditionVariable       _isFree, _isFull;
-    std::queue<std::uint32_t>  _clients;
-    std::size_t                _capacity;
-//    std::size_t                _size; // FIXME: replace with a simple bool ?
+    PcoConditionVariable barberAvailable, clientAvailable, beautifyDone;
+    size_t capacity;
+    size_t nbClientsInSalon = 0; // Number of clients in the salon
+    size_t currentTicket = 0; // Next ticket to be issued
+    size_t nextServeTicket = 0; // Next ticket to be served
+    bool barberSleeping = false;
+    bool workingChairAvailable = true;
 };
 
 #endif // PCOSALON_H

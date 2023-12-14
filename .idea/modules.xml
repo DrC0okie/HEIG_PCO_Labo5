@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/HEIG_PCO_Labo5.iml" filepath="$PROJECT_DIR$/.idea/HEIG_PCO_Labo5.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lab05.iml" filepath="$PROJECT_DIR$/.idea/lab05.iml" />
     </modules>
   </component>
