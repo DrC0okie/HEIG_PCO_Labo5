@@ -31,8 +31,11 @@ unsigned int PcoSalon::getNbClient() {
 
 bool PcoSalon::accessSalon(unsigned clientId) {
     _mutex.lock();
-    if(firstClientId == -1)
+    if(nbClientsInSalon == 0)
         firstClientId = clientId;
+
+    nbClientsInSalon++;
+
     std::cerr << "Client " << clientId << " is trying to access the salon" << std::endl;
     // The salon is fullanimationClientSitOnChair
     if(nbClientsInSalon >= capacity) {
@@ -41,7 +44,6 @@ bool PcoSalon::accessSalon(unsigned clientId) {
         return false;
     }
 
-    nbClientsInSalon++;
     std::cerr << "Client " << clientId << ": I enter the salon, now there is " << nbClientsInSalon << " clients in the salon" << std::endl;
     animationClientAccessEntrance(clientId);
 
@@ -88,9 +90,10 @@ void PcoSalon::goForHairCut(unsigned clientId) {
     beautifyDone.wait(&_mutex);
     std::cerr << "Client " << clientId << ": The barber has finished it's cut" << std::endl;
 
-    // Free the working chair
+    std::cerr << "Client " << clientId << ": I notify the barber that I leaved the chair" << std::endl;
     workingChairFree = true;
-    std::cerr << "Client " << clientId << ": I'm standing off the chair, now it is free" << std::endl;
+
+    clientOnWorkingChair.notifyOne();
     _mutex.unlock();
 }
 
@@ -144,19 +147,21 @@ void PcoSalon::pickNextClient() {
     _mutex.lock();
     std::cerr << "Barber: I must pick a client" << std::endl;
     // A client is already in the working chair
-    if(!workingChairFree){
-        std::cerr << "Barber: The working chair is not free" << std::endl;
-        _mutex.unlock();
-        return;
-    }
+//    if(!workingChairFree){
+//        std::cerr << "Barber: The working chair is not free" << std::endl;
+//        _mutex.unlock();
+//        return;
+//    }
 
-    std::cerr << "Barber: The working chair is free" << std::endl;
+//    std::cerr << "Barber: The working chair is free" << std::endl;
 
     if (nbClientsInSalon > 0) {
         std::cerr << "Barber: There is "<< nbClientsInSalon << "client(s) in the salon, notify the ticket #" << nextServeTicket << std::endl;
         // call the next client
         nextServeTicket++;
         clientAvailable.notifyAll();
+        _mutex.unlock();
+        return;
     }
 
     std::cerr << "Barber: There is "<< nbClientsInSalon << "client(s) in the salon, do nothing" << std::endl;
@@ -184,8 +189,11 @@ void PcoSalon::beautifyClient() {
     std::cerr << "Barber: The cut is done, I notifiy the client on the barber chair" << std::endl;
     beautifyDone.notifyOne();
 
-    std::cerr << "Barber: Now I decrement the number of client in the shop. There are " << nbClientsInSalon << " in the shop" << std::endl;
+    std::cerr << "Barber: I'm waiting that the client leaves the chair" << std::endl;
+    clientOnWorkingChair.wait(&_mutex);
+
     nbClientsInSalon--;
+    std::cerr << "Barber: Now I decrement the number of client in the shop. There are " << nbClientsInSalon << " in the shop" << std::endl;
 
     _mutex.unlock();
 }

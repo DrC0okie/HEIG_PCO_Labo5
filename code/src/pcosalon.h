@@ -166,11 +166,11 @@ protected:
     PcoConditionVariable barberAvailable, clientAvailable, beautifyDone, clientOnWorkingChair;
     size_t capacity;
     size_t nbClientsInSalon = 0; // Number of clients in the salon
-    size_t currentTicket = 0; // Next ticket to be issued
+    size_t currentTicket = 1; // Next ticket to be issued
     size_t nextServeTicket = 0; // Next ticket to be served
     bool barberSleeping = false;
-    bool   workingChairFree = true;
-    int firstClientId = -1;
+    bool workingChairFree = true;
+    size_t firstClientId = 0;
 };
 
 #endif // PCOSALON_H
