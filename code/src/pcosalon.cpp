@@ -16,10 +16,15 @@
 PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs)
     : _interface(interface),
       _capacity(nb_chairs + 1),
-      _nbWaitingChairs(nb_chairs),
-      _inService(true)
-{
-    // TODO
+      _nbChairs(nb_chairs),
+      _inService(true) {
+    _currentTicket               = 1;
+    _nextTicket                  = 0;
+    _nbClientsInside             = 0;
+    _freeChairIndex              = 0;
+    _barberChairFree             = true;
+    _clientToBarberChair         = false;
+    _barberSleeping              = false;
 }
 
 /********************************************
@@ -27,57 +32,47 @@ PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs)
  *******************************************/
 unsigned int PcoSalon::getNbClient() {
     _mutex.lock();
-    unsigned int count = _nbClientsInSalon;
+    unsigned int count = _nbClientsInside;
     _mutex.unlock();
     return count;
 }
 
 bool PcoSalon::accessSalon(unsigned clientId) {
     _mutex.lock();
-    std::cerr << "Client " << clientId << " is trying to access the salon" << std::endl;
 
     // The salon is full
-    if(_nbClientsInSalon >= _capacity) {
+    if (_nbClientsInside >= _capacity) {
         _mutex.unlock();
         return false;
     }
 
     // Check if the client is the first one in the salon
-    if(_nbClientsInSalon == 0)
+    if (_nbClientsInside == 0) {
         _firstClientId = clientId;
-
-    _nbClientsInSalon++;
-    animationClientAccessEntrance(clientId);
-    std::cerr << "Client " << clientId << ": I enter the salon, now there are " << _nbClientsInSalon << " clients in the salon" << std::endl;
-
-    if(_barberSleeping){
-        std::cerr << "Client " << clientId << ": The barber is sleeping, I wake him up" << std::endl;
-        _barberAvailable.notifyOne(); // Wake up the barber if sleeping
+        _clientToBarberChair = true;
     }
 
-    // Go directly for hair cut if the barber is available and no one is waiting
-    if (_workingChairFree && clientId == _firstClientId) {
-        std::cerr << "Client " << clientId << ": The working chair is available, and I am the first client in the shop" << std::endl;
-        _clientWalkingToWorkingChair = true;
+    _nbClientsInside++;
+    animationClientAccessEntrance(clientId);
+
+    // Wake up the barber if sleeping
+    if (_barberSleeping)
+        _barber.notifyOne();
+
+    // Go directly for hair cut if first client in the salon
+    if (_clientToBarberChair && clientId == _firstClientId) {
         _mutex.unlock();
         return true;
     }
-    std::cerr << "Client " << clientId << ": there are " << _nbClientsInSalon << " clients in the salon. I must take a ticket" << std::endl;
 
     // Take a ticket and wait for the barber to be ready
     size_t clientTicket = _currentTicket++;
-    std::cerr << "Client " << clientId << ": My ticket number = " << clientTicket << ". Now I wait on the chair #" << freeChairIndex << std::endl;
-
-    animationClientSitOnChair(clientId, freeChairIndex);
-    freeChairIndex = (freeChairIndex + 1) % _nbWaitingChairs;
+    animationClientSitOnChair(clientId, _freeChairIndex);
+    _freeChairIndex = (_freeChairIndex + 1) % _nbChairs;
 
     // Wait for the barber to be ready
-    while (clientTicket != _nextServeTicket || _nbClientsInSalon >= _capacity) {
-        _clientAvailable.wait(&_mutex);
-    }
-
-    std::cerr << "Client " << clientId << ": I have been notified that the ticket #" << _nextServeTicket
-              << " must go to the chair. Now I free my wait chair #" << freeChairIndex << std::endl;
+    while (clientTicket != _nextTicket || _nbClientsInside >= _capacity)
+        _client.wait(&_mutex);
 
     _mutex.unlock();
     return true;
@@ -85,122 +80,96 @@ bool PcoSalon::accessSalon(unsigned clientId) {
 
 void PcoSalon::goForHairCut(unsigned clientId) {
     _mutex.lock();
-    std::cerr << "Client " << clientId << ": I'm walking to the working chair" << std::endl;
     animationClientSitOnWorkChair(clientId);
 
     // Notify the barber that the client is on the working chair
-    std::cerr << "Client " << clientId << ": I'm seated in the barber chair. I notify the barber that i'm ready to have my hair cut" << std::endl;
-    _workingChairFree = false;
-    _clientWalkingToWorkingChair = false;
+    _barberChairFree = false;
+    _clientToBarberChair = false;
     _clientOnWorkingChair.notifyOne();
 
-    // Wait for the barber to notify the job done
+    // Wait for the barber to finish the hair cut
     _beautifyDone.wait(&_mutex);
-    std::cerr << "Client " << clientId << ": The barber has finished it's cut" << std::endl;
-    std::cerr << "Client " << clientId << ": I notify the barber that I leaved the chair" << std::endl;
-    _workingChairFree = true;
+    _barberChairFree = true;
     _clientOnWorkingChair.notifyOne();
     _mutex.unlock();
 }
 
 void PcoSalon::waitingForHairToGrow(unsigned clientId) {
-    // Simulate waiting for hair to grow
     _mutex.lock();
-    std::cerr << "Client " << clientId << ": I'm waiting for my hair to grow" << std::endl;
     animationClientWaitForHairToGrow(clientId);
     _mutex.unlock();
 }
 
 
 void PcoSalon::walkAround(unsigned clientId) {
-    // Simulate client walking around
     _mutex.lock();
-    std::cerr << "Client " << clientId << ": I'm going to walk around, coming back in a while" << std::endl;
     animationClientWalkAround(clientId);
     _mutex.unlock();
 }
 
 
 void PcoSalon::goHome(unsigned clientId) {
-    // Simulate client going home
     _mutex.lock();
-    std::cerr << "Client " << clientId << ": I'm going home" << std::endl;
     animationClientGoHome(clientId);
     _mutex.unlock();
 }
-
 
 /********************************************
  * Méthodes de l'interface pour le barbier  *
  *******************************************/
 void PcoSalon::goToSleep() {
     _mutex.lock();
-    std::cerr << "Barber : I'm going to sleep" << std::endl;
     _barberSleeping = true;
     animationBarberGoToSleep();
-    while (_nbClientsInSalon == 0 && _inService) {  // Sleep if no clients are
-        std::cerr << "Barber : Zzzz..." << std::endl;
-        _barberAvailable.wait(&_mutex);
-    }
-    std::cerr << "The barber is awakening" << std::endl;
+
+    // Wait for a client to wake the barber up
+    while (_nbClientsInside == 0 && _inService)
+        _barber.wait(&_mutex);
+
     _barberSleeping = false;
     animationWakeUpBarber();
-    std::cerr << "The barber is fully awake" << std::endl;
     _mutex.unlock();
 }
 
 void PcoSalon::pickNextClient() {
     _mutex.lock();
+
     // A client is already in the working chair
-    if(!_workingChairFree || _clientWalkingToWorkingChair){
-        std::cerr << "Barber: A client is waiting on the working chair" << std::endl;
+    if (!_barberChairFree || _clientToBarberChair) {
         _mutex.unlock();
         return;
     }
 
-    std::cerr << "Barber: The working chair is free, I must pick a client" << std::endl;
-
-    if (_nbClientsInSalon > 0) {
-        _nextServeTicket++;
-        std::cerr << "Barber: There are "<< _nbClientsInSalon
-                  << " clients in the salon, notify the ticket #" << _nextServeTicket << std::endl;
-        // call the next client
-        _clientAvailable.notifyAll();
+    // call the next client
+    if (_nbClientsInside > 0) {
+        _nextTicket++;
+        _client.notifyAll();
         _mutex.unlock();
         return;
     }
-
-    std::cerr << "Barber: There are "<< _nbClientsInSalon << "client in the salon, do nothing" << std::endl;
     _mutex.unlock();
 }
 
 
 void PcoSalon::waitClientAtChair() {
     _mutex.lock();
-    while(_workingChairFree || _clientWalkingToWorkingChair){
-        std::cerr << "Barber: I'm waiting the client at the chair" << std::endl;
+    while (_barberChairFree || _clientToBarberChair)
         _clientOnWorkingChair.wait(&_mutex);
-    }
-    std::cerr << "Barber: The client is on the chair, I can start" << std::endl;
+
     _mutex.unlock();
 }
 
 
 void PcoSalon::beautifyClient() {
     _mutex.lock();
-    std::cerr << "Barber: I'm starting cutting the hair" << std::endl;
     animationBarberCuttingHair();
 
     // The cut is done
-    std::cerr << "Barber: The cut is done, I notifiy the client on the barber chair" << std::endl;
     _beautifyDone.notifyOne();
-
-    std::cerr << "Barber: I'm waiting that the client leaves the chair" << std::endl;
     _clientOnWorkingChair.wait(&_mutex);
 
-    _nbClientsInSalon--;
-    std::cerr << "Barber: Now I decrement the number of client in the shop. There are " << _nbClientsInSalon << " in the shop" << std::endl;
-
+    // The client is leaving
+    _nbClientsInside--;
     _mutex.unlock();
 }
 
@@ -217,71 +186,64 @@ bool PcoSalon::isInService() {
 void PcoSalon::endService() {
     _mutex.lock();
     _inService = false;
-    if(_barberSleeping)
-        _barberAvailable.notifyOne();
+    if (_barberSleeping)
+        _barber.notifyOne();
     _mutex.unlock();
 }
 
 /********************************************
  *   Méthodes privées pour les animations   *
  *******************************************/
-void PcoSalon::animationClientAccessEntrance(unsigned clientId)
-{
+void PcoSalon::animationClientAccessEntrance(unsigned clientId) {
     _mutex.unlock();
     _interface->clientAccessEntrance(clientId);
     _mutex.lock();
 }
 
-void PcoSalon::animationClientSitOnChair(unsigned clientId, unsigned clientSitNb)
-{
+void PcoSalon::animationClientSitOnChair(unsigned clientId,
+                                         unsigned clientSitNb) {
     _mutex.unlock();
     _interface->clientSitOnChair(clientId, clientSitNb);
     _mutex.lock();
 }
 
-void PcoSalon::animationClientSitOnWorkChair(unsigned clientId)
-{
+void PcoSalon::animationClientSitOnWorkChair(unsigned clientId) {
     _mutex.unlock();
     _interface->clientSitOnWorkChair(clientId);
     _mutex.lock();
 }
 
-void PcoSalon::animationClientWaitForHairToGrow(unsigned clientId)
-{
+void PcoSalon::animationClientWaitForHairToGrow(unsigned clientId) {
     _mutex.unlock();
     _interface->clientWaitHairToGrow(clientId, true);
     _mutex.lock();
 }
 
-void PcoSalon::animationClientWalkAround(unsigned clientId)
-{
+void PcoSalon::animationClientWalkAround(unsigned clientId) {
     _mutex.unlock();
     _interface->clientWalkAround(clientId);
     _mutex.lock();
 }
 
-void PcoSalon::animationBarberGoToSleep()
-{
+void PcoSalon::animationBarberGoToSleep() {
     _mutex.unlock();
     _interface->barberGoToSleep();
     _mutex.lock();
 }
 
-void PcoSalon::animationWakeUpBarber()
-{
+void PcoSalon::animationWakeUpBarber() {
     _mutex.unlock();
     _interface->clientWakeUpBarber();
     _mutex.lock();
 }
 
-void PcoSalon::animationBarberCuttingHair()
-{
+void PcoSalon::animationBarberCuttingHair() {
     _mutex.unlock();
     _interface->barberCuttingHair();
     _mutex.lock();
 }
 
-void PcoSalon::animationClientGoHome(unsigned clientId){
+void PcoSalon::animationClientGoHome(unsigned clientId) {
     _mutex.unlock();
     _interface->clientWaitHairToGrow(clientId, false);
     _mutex.lock();
