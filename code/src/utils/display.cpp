@@ -218,7 +218,7 @@ void SalonDisplay::clientWakeUpBarber(){
     QObject::connect(animation, SIGNAL(finished()), this, SLOT(finishedAnimation()));
 }
 
-void SalonDisplay::clientSitOnChair(unsigned id, int nb_chair){
+void SalonDisplay::clientSitOnChair(unsigned id, unsigned nb_chair){
     m_clients.at(id)->setZValue(m_seats.at(nb_chair)->zValue() );
     auto pos = m_seats.at(nb_chair)->pos();
     pos.setY(pos.y() - 25);

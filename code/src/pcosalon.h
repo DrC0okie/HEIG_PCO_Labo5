@@ -18,7 +18,7 @@
 
 class PcoSalon : public Salon {
     public:
-    PcoSalon(GraphicSalonInterface *interface, unsigned int capacity);
+    PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs);
 
     /********************************************
      * Méthodes de l'interface pour les clients *
@@ -168,16 +168,18 @@ class PcoSalon : public Salon {
     PcoMutex               _mutex;
     PcoConditionVariable   _barberAvailable, _clientAvailable, _beautifyDone,
         _clientOnWorkingChair;
-    size_t _capacity;
+    size_t _capacity;              // Capacity of the salon
+    size_t _nbWaitingChairs;        // Number of chairs in the waiting room
+    bool   _inService;
+
     size_t _nbClientsInSalon = 0;  // Number of clients in the salon
     size_t _currentTicket    = 1;  // Next ticket to be issued
     size_t _nextServeTicket  = 0;  // Next ticket to be served
-    size_t freeChairIndex = 0;
-    bool   _barberSleeping   = false;
-    bool   _workingChairFree = true;
-    bool _clientWalkingToWorkingChair = false;
-    size_t _nbWaitingChairs;
-    size_t _firstClientId    = 0;
+    size_t freeChairIndex    = 0; // Index of the next free chair
+    size_t _firstClientId               = 0;
+    bool   _barberSleeping              = false;
+    bool   _workingChairFree            = true;
+    bool   _clientWalkingToWorkingChair = false;
 };
 
 #endif  // PCOSALON_H

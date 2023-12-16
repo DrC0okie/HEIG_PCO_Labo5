@@ -65,7 +65,7 @@ void MainWindow::clientAccessEntrance(unsigned id){
     m_display->clientAccessEntrance(id);
 }
 
-void MainWindow::clientSitOnChair(unsigned id, int chair_nb){
+void MainWindow::clientSitOnChair(unsigned id, unsigned chair_nb){
     m_display->clientSitOnChair(id, chair_nb);
 }
 

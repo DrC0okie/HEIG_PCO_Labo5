@@ -13,8 +13,11 @@
 
 #include <iostream>
 
-PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int capacity)
-    : _interface(interface), _capacity(capacity + 1), _nbWaitingChairs(capacity)
+PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs)
+    : _interface(interface),
+      _capacity(nb_chairs + 1),
+      _nbWaitingChairs(nb_chairs),
+      _inService(true)
 {
     // TODO
 }
@@ -55,6 +58,7 @@ bool PcoSalon::accessSalon(unsigned clientId) {
     // Go directly for hair cut if the barber is available and no one is waiting
     if (_workingChairFree && clientId == _firstClientId) {
         std::cerr << "Client " << clientId << ": The working chair is available, and I am the first client in the shop" << std::endl;
+        _clientWalkingToWorkingChair = true;
         _mutex.unlock();
         return true;
     }
@@ -81,9 +85,9 @@ bool PcoSalon::accessSalon(unsigned clientId) {
 
 void PcoSalon::goForHairCut(unsigned clientId) {
     _mutex.lock();
-    _clientWalkingToWorkingChair = true;
     std::cerr << "Client " << clientId << ": I'm walking to the working chair" << std::endl;
     animationClientSitOnWorkChair(clientId);
+
     // Notify the barber that the client is on the working chair
     std::cerr << "Client " << clientId << ": I'm seated in the barber chair. I notify the barber that i'm ready to have my hair cut" << std::endl;
     _workingChairFree = false;
@@ -93,10 +97,8 @@ void PcoSalon::goForHairCut(unsigned clientId) {
     // Wait for the barber to notify the job done
     _beautifyDone.wait(&_mutex);
     std::cerr << "Client " << clientId << ": The barber has finished it's cut" << std::endl;
-
     std::cerr << "Client " << clientId << ": I notify the barber that I leaved the chair" << std::endl;
     _workingChairFree = true;
-
     _clientOnWorkingChair.notifyOne();
     _mutex.unlock();
 }
@@ -206,16 +208,17 @@ void PcoSalon::beautifyClient() {
  *    Méthodes générales de l'interface     *
  *******************************************/
 bool PcoSalon::isInService() {
-    // TODO
+    _mutex.lock();
+    const bool inService = _inService;
+    _mutex.unlock();
+    return inService;
 }
-
 
 void PcoSalon::endService() {
     _mutex.lock();
-    _currentTicket    = 0;
-    _nextServeTicket  = 0;
-    _nbClientsInSalon = 0;
-    _firstClientId    = 0;
+    _inService = false;
+    if(_barberSleeping)
+        _barberAvailable.notifyOne();
     _mutex.unlock();
 }
 
