@@ -24,17 +24,17 @@ Client::Client(GraphicSalonInterface                *interface,
 
 void Client::run() {
     while (_salon->isInService()) {
-        if (_salon->accessSalon(_clientId)) {
-            _interface->consoleAppendTextClient(_clientId, "J'entre dans le salon !");
-            _interface->consoleAppendTextClient(_clientId, "Je vais sur la chaise du barbier");
-            _salon->goForHairCut(_clientId);
-            _interface->consoleAppendTextClient(_clientId, "J'ai fini de me faire couper les cheveux");
-            _salon->waitingForHairToGrow(_clientId);
-        } else {
-            _interface->consoleAppendTextClient(_clientId, "Le salon est plein, je reviendrai plus tard !");
+        _interface->consoleAppendTextClient(_clientId, "Je tente d'accéder au salon");
+        if (!_salon->accessSalon(_clientId)) {
+            _interface->consoleAppendTextClient(_clientId, "Le salon est plein, je reviens plus tard");
             _salon->walkAround(_clientId);
+            continue;
         }
+        _interface->consoleAppendTextClient(_clientId, "Je vais me faire coiffer sur la chaise du barbier");
+        _salon->goForHairCut(_clientId);
+        _interface->consoleAppendTextClient(_clientId, "J'attends que mes cheveux repoussent");
+        _salon->waitingForHairToGrow(_clientId);
     }
-        _interface->consoleAppendTextClient(_clientId, "Le salon est fermé... Zut !");
-        _salon->goHome(_clientId);
+    _interface->consoleAppendTextClient(_clientId, "Le salon est fermé... Zut !");
+    _salon->goHome(_clientId);
 }

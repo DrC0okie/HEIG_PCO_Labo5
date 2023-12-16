@@ -20,19 +20,20 @@ Barber::Barber(GraphicSalonInterface *interface,
 }
 
 void Barber::run() {
-    while (true) {
-        if (_salon->getNbClient() <= 0) {
-            _interface->consoleAppendTextBarber("Je m'endors...");
+    while (_salon->isInService() || _salon->getNbClient() > 0){
+        _interface->consoleAppendTextBarber("Je suis prêt à accueillir un client");
+        if (_salon->getNbClient() == 0) {
+            _interface->consoleAppendTextBarber("Pas de client, je vais dormir");
             _salon->goToSleep();
-            _interface->consoleAppendTextBarber("Je me réveille !");
-        } else {
-            _salon->pickNextClient();
-            _interface->consoleAppendTextBarber("Je vais chercher un client !");
+            continue;
         }
+
+        _interface->consoleAppendTextBarber("J'appelle le cient suivant");
+        _salon->pickNextClient();
+        _interface->consoleAppendTextBarber("J'attends que le client vienne sur la chaise");
         _salon->waitClientAtChair();
-        _interface->consoleAppendTextBarber("Je coiffe un client !");
+        _interface->consoleAppendTextBarber("Je vais coiffer le client");
         _salon->beautifyClient();
-        _interface->consoleAppendTextBarber("J'ai fini de coiffer un client !");
     }
     _interface->consoleAppendTextBarber("La journée est terminée, à demain !");
 }
