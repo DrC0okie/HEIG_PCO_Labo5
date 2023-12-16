@@ -82,7 +82,7 @@ public slots:
       void barberCuttingHair();
       void barberGoToSleep();
 
-      void clientSitOnChair(unsigned id, int chair_nb);
+      void clientSitOnChair(unsigned id, unsigned chair_nb);
       void clientSitOnWorkChair(unsigned id);
       void clientHairCutEnded(unsigned id);
       void clientWaitHairToGrow(unsigned id, bool comeBack);

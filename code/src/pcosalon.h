@@ -12,37 +12,39 @@
 
 #include <pcosynchro/pcoconditionvariable.h>
 #include <pcosynchro/pcomanager.h>
+
 #include "salon.h"
 #include "utils/graphicsaloninterface.h"
 
-class PcoSalon : public Salon
-{
-public:
-    PcoSalon(GraphicSalonInterface *interface, unsigned int capacity);
+class PcoSalon : public Salon {
+    public:
+    PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs);
 
     /********************************************
      * Méthodes de l'interface pour les clients *
      *******************************************/
     /*!
      * \brief accessSalon Permet au client de savoir si le salon est plein
-     * \return retourne true si le client peut accéder au salon, false s'il est plein
+     * \return retourne true si le client peut accéder au salon, false s'il est
+     * plein
      */
     bool accessSalon(unsigned clientId) override;
 
     /*!
-     *  \brief moveToWorkingChair Le client se dirige vers la chaise pour se faire embellir
+     *  \brief moveToWorkingChair Le client se dirige vers la chaise pour se
+     * faire embellir
      */
     void goForHairCut(unsigned clientId) override;
 
     /*!
-     *  \brief waitingForHairToGrow Après s'être fait coiffé, le client part et ne revient
-     *  pas tant que ses cheuveux n'ont pas repoussé
+     *  \brief waitingForHairToGrow Après s'être fait coiffé, le client part et
+     * ne revient pas tant que ses cheuveux n'ont pas repoussé
      */
     void waitingForHairToGrow(unsigned clientId) override;
 
     /*!
-     *  \brief walkAround Si le salon est plein, le client va se balader pendant un certains
-     *  temps et revenir après a voir pris un petit kawa
+     *  \brief walkAround Si le salon est plein, le client va se balader pendant
+     * un certains temps et revenir après a voir pris un petit kawa
      */
     void walkAround(unsigned clientId) override;
 
@@ -72,13 +74,14 @@ public:
     void pickNextClient() override;
 
     /*!
-     *  \brief waitClientAtChair permet au barbier d'attendre l'arrivée du client
-     *  au siège de travail
+     *  \brief waitClientAtChair permet au barbier d'attendre l'arrivée du
+     * client au siège de travail
      */
     void waitClientAtChair() override;
 
     /*!
-     *  \brief beautifyClient permet au barbier de réaliser sa tâche sur le client
+     *  \brief beautifyClient permet au barbier de réaliser sa tâche sur le
+     * client
      */
     void beautifyClient() override;
 
@@ -96,12 +99,12 @@ public:
      */
     void endService() override;
 
-protected:
+    protected:
     /*!
      * \brief animationClientAccessEntrance déclenche l'animation du client qui
-     * accède à l'entrée du salon. Lorsqu'il est possible pour un client d'entrer
-     * dans le salon, cette méthode doit être appelée.
-     * \param unsigned ID du client
+     * accède à l'entrée du salon. Lorsqu'il est possible pour un client
+     * d'entrer dans le salon, cette méthode doit être appelée. \param unsigned
+     * ID du client
      */
     void animationClientAccessEntrance(unsigned clientId);
 
@@ -114,16 +117,16 @@ protected:
     void animationClientSitOnChair(unsigned clientId, unsigned clientSitNb);
 
     /*!
-     * \brief animationClientSitOnWorkChair déclenche l'animation du client qui va se
-     * placer sur le siège de travail du barbier
-     * \param unsigned ID du client
+     * \brief animationClientSitOnWorkChair déclenche l'animation du client qui
+     * va se placer sur le siège de travail du barbier \param unsigned ID du
+     * client
      */
     void animationClientSitOnWorkChair(unsigned clientId);
 
     /*!
-     * \brief animationClientWaitForHairToGrow déclenche l'animation du client qui
-     * qui part loin le temps que ses cheveux repoussent
-     * \param unsigned ID du client
+     * \brief animationClientWaitForHairToGrow déclenche l'animation du client
+     * qui qui part loin le temps que ses cheveux repoussent \param unsigned ID
+     * du client
      */
     void animationClientWaitForHairToGrow(unsigned clientId);
 
@@ -160,16 +163,13 @@ protected:
      */
     void animationClientGoHome(unsigned clientId);
 
-protected:
+    protected:
     GraphicSalonInterface *_interface;
     PcoMutex _mutex;
-    PcoConditionVariable barberAvailable, clientAvailable, beautifyDone, clientOnWorkingChair;
-    size_t capacity;
-    size_t nbClientsInSalon = 0; // Number of clients in the salon
-    size_t currentTicket = 0; // Next ticket to be issued
-    size_t nextServeTicket = 0; // Next ticket to be served
-    bool barberSleeping = false;
-    bool workingChairAvailable = true;
+    PcoConditionVariable _barber, _client, _beautifyDone, _clientOnWorkingChair;
+    bool _inService, _barberSleeping, _barberChairFree, _clientToBarberChair;
+    size_t _capacity, _nbChairs, _nbClientsInside, _currentTicket, _nextTicket,
+        _freeChairIndex, _firstClientId;
 };
 
-#endif // PCOSALON_H
+#endif  // PCOSALON_H

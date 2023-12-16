@@ -51,6 +51,7 @@
 
     \section{Conception}
 
+    % TODO 1-2 explicative sentences by Tim
 
     \section{Implementation}
 
@@ -61,11 +62,49 @@
 
     \section{Tests}
 
+    Cas testés pour la synchronistation :
+    \begin{itemize}
+        \item Plus de clients(8) que de sièges(2)
+        \item Plus de sièges(8) que de clients(2)
+        \item Le même nombre de clients que de sièges(4)
+        \item Pas de siege et un seul client
+        \item Pas de siege et plusieurs clients (8)
+        \item Pas de siege et pas de client
+        \item Plusieurs sièges et un seul client
+        \item Un seul siège et plusieurs clients(8)
+        \item Beaucoup de clients (30) et de suèges(20)
+    \end{itemize}
+
+    Terminaison du programme pendant les animations suivantes :
+    \begin{itemize}
+        \item Un client entre dans le salon
+        \item Un client va s'asseoir
+        \item Un client se fait couper les cheveux
+        \item Un client se fait couper les cheveux et personne n'attend
+        \item Un client attend que ses cheveux poussent
+        \item Un client fait un tour
+        \item Le barbier dort
+        \item Le barbier se réveille
+    \end{itemize}
+
+    L'ordre d'entrée des clients est bien respecté :
+    \begin{itemize}
+        \item Lorqu'il y a un seul client
+        \item Lorsqu'il y a plusieurs clients
+    \end{itemize}
+
+    Autres tests :
+    \begin{itemize}
+        \item Les clients ne font un tour que s'il n'y a plus de place dans le salon
+        \item Les clients ne rentrent chez eux que si le salon est fermé
+        \item Le barbier va se coucher quand il n'y a pas de clients
+        \item Lorsque le barbier dort et qu'un client est entré dans le salon, il le réveille
+        \item Le barbier s'arrête quand il n'y a plus de clients et que la journée est terminée
+    \end{itemize}
 
     \section{Conclusion}
 
     \section*{Appendix}
-
 
     \section{Appendix name}
     \begin{figure}[!htb]

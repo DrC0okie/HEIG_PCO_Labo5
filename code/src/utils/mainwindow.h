@@ -43,7 +43,7 @@ public slots:
     void consoleAppendTextBarber(const QString &text);
 
     void clientAccessEntrance(unsigned id);
-    void clientSitOnChair(unsigned id, int chair_nb);
+    void clientSitOnChair(unsigned id, unsigned chair_nb);
     void clientWaitHairCut(unsigned id);
     void clientWaitHairToGrow(unsigned id, bool comeBack);
     void clientWaitRoomIsFull(unsigned id);

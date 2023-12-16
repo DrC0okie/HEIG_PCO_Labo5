@@ -41,8 +41,8 @@ GraphicSalonInterface::GraphicSalonInterface()
         std::cout << "Error with signal-slot connection" << std::endl;
     }
 
-    if (!QObject::connect(this, SIGNAL(sig_clientSitOnChair(unsigned, int)), mainWindow,
-                          SLOT(clientSitOnChair(unsigned, int)), Qt::QueuedConnection)) {
+    if (!QObject::connect(this, SIGNAL(sig_clientSitOnChair(unsigned, unsigned)), mainWindow,
+                          SLOT(clientSitOnChair(unsigned, unsigned)), Qt::QueuedConnection)) {
         std::cout << "Error with signal-slot connection" << std::endl;
     }
 
@@ -135,7 +135,7 @@ void GraphicSalonInterface::clientAccessEntrance(unsigned int id){
     getClient(id)->sem.acquire();
 }
 
-void GraphicSalonInterface::clientSitOnChair(unsigned int id, int chair_nb){
+void GraphicSalonInterface::clientSitOnChair(unsigned id, unsigned chair_nb){
     emit sig_clientSitOnChair(id, chair_nb);
 //    getClient(id)->sem.acquire();
 }

@@ -26,7 +26,7 @@ public:
     void consoleAppendTextClient(unsigned int consoleId, QString text);
     void consoleAppendTextBarber(QString text);
 
-    void clientSitOnChair(unsigned id, int chair_nb);
+    void clientSitOnChair(unsigned id, unsigned chair_nb);
     void clientSitOnWorkChair(unsigned id);
     void clientHairCutEnded(unsigned id);
     void clientWaitHairToGrow(unsigned id, bool comeBack);
@@ -56,7 +56,7 @@ signals:
     void sig_consoleAppendTextBarber(QString text);
 
     void sig_clientAccessEntrance(unsigned id);
-    void sig_clientSitOnChair(unsigned id, int chair_nb);
+    void sig_clientSitOnChair(unsigned id, unsigned chair_nb);
     void sig_clientWaitHairCut(unsigned id);
     void sig_clientWaitHairToGrow(unsigned id, bool comeBack);
     void sig_clientWaitRoomIsFull(unsigned id);
