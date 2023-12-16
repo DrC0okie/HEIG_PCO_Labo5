@@ -138,7 +138,7 @@ void PcoSalon::goToSleep() {
     std::cerr << "Barber : I'm going to sleep" << std::endl;
     _barberSleeping = true;
     animationBarberGoToSleep();
-    while (_nbClientsInSalon == 0) {  // Sleep if no clients are
+    while (_nbClientsInSalon == 0 && _inService) {  // Sleep if no clients are
         std::cerr << "Barber : Zzzz..." << std::endl;
         _barberAvailable.wait(&_mutex);
     }
