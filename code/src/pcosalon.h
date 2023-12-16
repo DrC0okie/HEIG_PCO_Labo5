@@ -169,7 +169,7 @@ class PcoSalon : public Salon {
     PcoConditionVariable _barber, _client, _beautifyDone, _clientOnWorkingChair;
     bool _inService, _barberSleeping, _barberChairFree, _clientToBarberChair;
     size_t _capacity, _nbChairs, _nbClientsInside, _currentTicket, _nextTicket,
-        _freeChairIndex, _firstClientId;
+        _freeChairIndex;
 };
 
 #endif  // PCOSALON_H

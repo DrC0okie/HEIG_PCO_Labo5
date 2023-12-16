@@ -46,21 +46,13 @@ bool PcoSalon::accessSalon(unsigned clientId) {
         return false;
     }
 
-    // Check if the client is the first one in the salon
-    if (_nbClientsInside == 0) {
-        _firstClientId = clientId;
-        _clientToBarberChair = true;
-    }
-
     _nbClientsInside++;
     animationClientAccessEntrance(clientId);
 
     // Wake up the barber if sleeping
-    if (_barberSleeping)
+    if (_barberSleeping){
         _barber.notifyOne();
-
-    // Go directly for hair cut if first client in the salon
-    if (_clientToBarberChair && clientId == _firstClientId) {
+        _clientToBarberChair = true;
         _mutex.unlock();
         return true;
     }

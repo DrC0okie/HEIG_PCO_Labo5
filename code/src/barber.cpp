@@ -20,6 +20,7 @@ Barber::Barber(GraphicSalonInterface *interface,
 }
 
 void Barber::run() {
+
     while (_salon->isInService() || _salon->getNbClient() > 0){
         _interface->consoleAppendTextBarber("Je suis prêt à accueillir un client");
         if (_salon->getNbClient() == 0) {
