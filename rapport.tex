@@ -131,6 +131,10 @@
         \item Le barbier s'arrête quand il n'y a plus de clients et que la journée est terminée
     \end{itemize}
 
+    \subsection{Edge case}
+    We discovered an edge case that we had to test for. Most of the time, when the simulation begins, the barber goes to sleep as there are no client in the salon yet. However, in rare scenarios, the barber is awake when the first client comes into the salon. In this case, we had to make the barber wait until the client is fully inside the salon (wait that the animation is finished) before picking the next client, otherwise, the barber would pick the nex ticket, while no client have already taken a ticket, leading to a deadlock. To test for this case, we simply added a sleep(1) before the main while loop in the barber::run method.
+    Note that when this edge case arrise, we have chosen to put the first client directly on the barber chair, as we found that making the client in the waiting chair useless. In addition, this choice allows an other client to enter the salon.
+
     \section{Conclusion}
 
     \section*{Appendix}
