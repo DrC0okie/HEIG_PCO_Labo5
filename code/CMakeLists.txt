@@ -12,7 +12,11 @@ set(CMAKE_AUTOUIC ON)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "src/*.ui")
 
-add_executable(pco_barbier ${SOURCES})
+add_executable(pco_barbier ${SOURCES}
+        src/utils/tests.cpp
+        src/utils/tests.h
+        src/utils/clientActions.h
+        src/utils/barberActions.h)
 
 target_link_libraries(pco_barbier PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Test -lpcosynchro)
 

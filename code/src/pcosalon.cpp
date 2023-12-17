@@ -5,13 +5,23 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Modifications à faire dans le fichier
+
+/**
+* @file pcosalon.cpp
+* @brief Impleementation of the PcoSalon class methods
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #include "pcosalon.h"
-
 #include <pcosynchro/pcothread.h>
-
 #include <iostream>
+#include "utils/barberActions.h"
+#include "utils/clientActions.h"
+
+typedef ClientAction CA;
+typedef BarberAction BA;
 
 PcoSalon::PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs)
     : _interface(interface),
@@ -40,31 +50,55 @@ unsigned int PcoSalon::getNbClient() {
 bool PcoSalon::accessSalon(unsigned clientId) {
     _mutex.lock();
 
+    addClientAction(clientId, CA::CHECK_PLACE);
+
     // The salon is full
     if (_nbClientsInside >= _capacity) {
+        addClientAction(clientId, CA::SALON_FULL);
         _mutex.unlock();
         return false;
     }
 
+    if(_nbClientsInside == 0 && !_barberSleeping)
+        _clientEntering = true;
+
     _nbClientsInside++;
     animationClientAccessEntrance(clientId);
+    addClientAction(clientId, CA::ENTER_SALON);
 
-    // Wake up the barber if sleeping
-    if (_barberSleeping){
-        _barber.notifyOne();
+    // In rare cases, the barber is awake while the client is entering the salon.
+    // In this case, the barber must wait until the client is effectively in the salon (after the animation)
+    // This client will go directly on the working chair
+    if(_clientEntering){
+        addClientAction(clientId, CA::BARBER_AWAKE);
+        _clientEntering = false;
+        _clientEnteringSalon.notifyOne();
         _clientToBarberChair = true;
         _mutex.unlock();
         return true;
     }
 
+    // Wake up the barber if sleeping
+    if (_barberSleeping || _nbChairs == 0){
+        addClientAction(clientId, CA::BARBER_SLEEPING);
+        _barber.notifyOne();
+        _clientToBarberChair = true;
+        _mutex.unlock();
+        addClientAction(clientId, CA::WAKE_UP_BARBER);
+        return true;
+    }
+
     // Take a ticket and wait for the barber to be ready
+    addClientAction(clientId, CA::BARBER_AWAKE);
     size_t clientTicket = _currentTicket++;
     animationClientSitOnChair(clientId, _freeChairIndex);
     _freeChairIndex = (_freeChairIndex + 1) % _nbChairs;
 
     // Wait for the barber to be ready
-    while (clientTicket != _nextTicket || _nbClientsInside >= _capacity)
+    while (clientTicket != _nextTicket || _nbClientsInside >= _capacity){
+        addClientAction(clientId, CA::WAIT_FOR_TURN);
         _client.wait(&_mutex);
+    }
 
     _mutex.unlock();
     return true;
@@ -72,6 +106,7 @@ bool PcoSalon::accessSalon(unsigned clientId) {
 
 void PcoSalon::goForHairCut(unsigned clientId) {
     _mutex.lock();
+    addClientAction(clientId, CA::WALKING_TO_BARBER_CHAIR);
     animationClientSitOnWorkChair(clientId);
 
     // Notify the barber that the client is on the working chair
@@ -84,11 +119,14 @@ void PcoSalon::goForHairCut(unsigned clientId) {
     _barberChairFree = true;
     _clientOnWorkingChair.notifyOne();
     _mutex.unlock();
+    addClientAction(clientId, CA::SIT_ON_BARBER_CHAIR);
 }
 
 void PcoSalon::waitingForHairToGrow(unsigned clientId) {
     _mutex.lock();
+    addClientAction(clientId, CA::LEAVE_BARBER_CHAIR);
     animationClientWaitForHairToGrow(clientId);
+    addClientAction(clientId, CA::WAIT_FOR_HAIR_TO_GROW);
     _mutex.unlock();
 }
 
@@ -96,6 +134,7 @@ void PcoSalon::waitingForHairToGrow(unsigned clientId) {
 void PcoSalon::walkAround(unsigned clientId) {
     _mutex.lock();
     animationClientWalkAround(clientId);
+    addClientAction(clientId, CA::WALK_AROUND);
     _mutex.unlock();
 }
 
@@ -103,6 +142,7 @@ void PcoSalon::walkAround(unsigned clientId) {
 void PcoSalon::goHome(unsigned clientId) {
     _mutex.lock();
     animationClientGoHome(clientId);
+    addClientAction(clientId, ClientAction::GO_HOME);
     _mutex.unlock();
 }
 
@@ -111,6 +151,7 @@ void PcoSalon::goHome(unsigned clientId) {
  *******************************************/
 void PcoSalon::goToSleep() {
     _mutex.lock();
+    addBarberAction(BA::GO_TO_SLEEP);
     _barberSleeping = true;
     animationBarberGoToSleep();
 
@@ -118,6 +159,7 @@ void PcoSalon::goToSleep() {
     while (_nbClientsInside == 0 && _inService)
         _barber.wait(&_mutex);
 
+    addBarberAction(BA::WAKE_UP);
     _barberSleeping = false;
     animationWakeUpBarber();
     _mutex.unlock();
@@ -126,12 +168,16 @@ void PcoSalon::goToSleep() {
 void PcoSalon::pickNextClient() {
     _mutex.lock();
 
-    // A client is already in the working chair
+    while(_clientEntering)
+        _clientEnteringSalon.wait(&_mutex);
+
+    // A client is already in / going to the working chair
     if (!_barberChairFree || _clientToBarberChair) {
         _mutex.unlock();
         return;
     }
 
+    addBarberAction(BA::PICK_NEXT_CLIENT);
     // call the next client
     if (_nbClientsInside > 0) {
         _nextTicket++;
@@ -145,6 +191,7 @@ void PcoSalon::pickNextClient() {
 
 void PcoSalon::waitClientAtChair() {
     _mutex.lock();
+    addBarberAction(BA::WAIT_CLIENT_AT_CHAIR);
     while (_barberChairFree || _clientToBarberChair)
         _clientOnWorkingChair.wait(&_mutex);
 
@@ -154,6 +201,7 @@ void PcoSalon::waitClientAtChair() {
 
 void PcoSalon::beautifyClient() {
     _mutex.lock();
+    addBarberAction(BA::CUT_CLIENT_HAIR);
     animationBarberCuttingHair();
 
     // The cut is done

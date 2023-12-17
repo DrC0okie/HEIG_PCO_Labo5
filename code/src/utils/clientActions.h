@@ -1,0 +1,22 @@
+//
+// Created by tim on 17.12.23.
+//
+
+#ifndef CLIENT_ACTION_H
+#define CLIENT_ACTION_H
+enum class ClientAction {
+    CHECK_PLACE,
+    SALON_FULL,
+    WALK_AROUND,
+    ENTER_SALON,
+    BARBER_AWAKE,
+    BARBER_SLEEPING,
+    WAKE_UP_BARBER,
+    WAIT_FOR_TURN,
+    WALKING_TO_BARBER_CHAIR,
+    SIT_ON_BARBER_CHAIR,
+    LEAVE_BARBER_CHAIR,
+    WAIT_FOR_HAIR_TO_GROW,
+    GO_HOME,
+};
+#endif  // CLIENT_ACTION_H

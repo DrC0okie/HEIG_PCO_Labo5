@@ -5,7 +5,14 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Modifications à faire dans le fichier
+
+/**
+* @file barber.cpp
+* @brief Implementation of the Barber class methods
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #include "barber.h"
 
@@ -20,17 +27,17 @@ Barber::Barber(GraphicSalonInterface *interface,
 }
 
 void Barber::run() {
-
     while (_salon->isInService() || _salon->getNbClient() > 0){
         _interface->consoleAppendTextBarber("Je suis prêt à accueillir un client");
         if (_salon->getNbClient() == 0) {
             _interface->consoleAppendTextBarber("Pas de client, je vais dormir");
             _salon->goToSleep();
             continue;
+        }else{
+            _interface->consoleAppendTextBarber("J'appelle le client suivant");
+            _salon->pickNextClient();
         }
 
-        _interface->consoleAppendTextBarber("J'appelle le cient suivant");
-        _salon->pickNextClient();
         _interface->consoleAppendTextBarber("J'attends que le client vienne sur la chaise");
         _salon->waitClientAtChair();
         _interface->consoleAppendTextBarber("Je vais coiffer le client");

@@ -5,7 +5,14 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Rien à modifier (ne pas modifier l'interface)
+
+/**
+* @file pcosalon.h
+* @brief PcoSalon header file
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #ifndef PCOSALON_H
 #define PCOSALON_H
@@ -17,6 +24,7 @@
 #include "utils/graphicsaloninterface.h"
 
 class PcoSalon : public Salon {
+
     public:
     PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs);
 
@@ -166,10 +174,9 @@ class PcoSalon : public Salon {
     protected:
     GraphicSalonInterface *_interface;
     PcoMutex _mutex;
-    PcoConditionVariable _barber, _client, _beautifyDone, _clientOnWorkingChair;
-    bool _inService, _barberSleeping, _barberChairFree, _clientToBarberChair;
-    size_t _capacity, _nbChairs, _nbClientsInside, _currentTicket, _nextTicket,
-        _freeChairIndex;
+    PcoConditionVariable _barber, _client, _beautifyDone, _clientOnWorkingChair, _clientEnteringSalon;
+    bool _inService, _barberSleeping, _barberChairFree, _clientToBarberChair, _clientEntering;
+    size_t _capacity, _nbChairs, _nbClientsInside, _currentTicket, _nextTicket, _freeChairIndex;
 };
 
 #endif  // PCOSALON_H

@@ -10,13 +10,11 @@
 
 #include <QApplication>
 #include <pcosynchro/pcologger.h>
-
-#include "utils/mainwindow.h"
 #include "application.h"
 #include "utils/graphicsaloninterface.h"
 
-constexpr unsigned int NB_CLIENTS = 1;
-constexpr unsigned int NB_SIEGES = 2;
+constexpr unsigned int NB_CLIENTS = 30;
+constexpr unsigned int NB_SIEGES = 20;
 
 int main(int argc, char *argv[])
 {
