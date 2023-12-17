@@ -5,7 +5,13 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Rien à modifier
+
+/**
+* @file salon.h
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #ifndef SALON_H
 #define SALON_H

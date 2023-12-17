@@ -1,6 +1,10 @@
-//
-// Created by tim on 17.12.23.
-//
+/**
+* @file tests.cpp
+* @brief Implementation of the Tests class methods
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #include <algorithm>
 #include <iostream>
@@ -11,9 +15,9 @@ bool Tests::isClientValidSequence(const std::vector<CA>& sequence, const std::ve
     auto isSequenceValid = [&sequence](const std::vector<CA>& validSeq) {
         auto it = sequence.begin();
         for (CA val : validSeq) {
-            if (val == REPEATED_VALUE) {
+            if (val == REPEATED_ACTION) {
                 // Skip all consecutive repeated values in the sequence
-                it = std::find_if_not(it, sequence.end(), [](CA x) { return x == REPEATED_VALUE; });
+                it = std::find_if_not(it, sequence.end(), [](CA x) { return x == REPEATED_ACTION; });
             } else {
                 // If the current value is not the repeadted value, it must match the value in the valid sequence
                 if (it == sequence.end() || *it != val)

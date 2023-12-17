@@ -5,14 +5,18 @@
  * | |    | |___| |__| |  / /_| |_| / /_ ___) |
  * |_|     \_____\____/  |____|\___/____|____/
  */
-// Modifications à faire dans le fichier
+
+/**
+* @file pcosalon.cpp
+* @brief Impleementation of the PcoSalon class methods
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
 
 #include "pcosalon.h"
-
 #include <pcosynchro/pcothread.h>
-
 #include <iostream>
-
 #include "utils/barberActions.h"
 #include "utils/clientActions.h"
 
@@ -55,13 +59,27 @@ bool PcoSalon::accessSalon(unsigned clientId) {
         return false;
     }
 
+    if(_nbClientsInside == 0 && !_barberSleeping)
+        _clientEntering = true;
+
     _nbClientsInside++;
     animationClientAccessEntrance(clientId);
-
     addClientAction(clientId, CA::ENTER_SALON);
 
+    // In rare cases, the barber is awake while the client is entering the salon.
+    // In this case, the barber must wait until the client is effectively in the salon (after the animation)
+    // This client will go directly on the working chair
+    if(_clientEntering){
+        addClientAction(clientId, CA::BARBER_AWAKE);
+        _clientEntering = false;
+        _clientEnteringSalon.notifyOne();
+        _clientToBarberChair = true;
+        _mutex.unlock();
+        return true;
+    }
+
     // Wake up the barber if sleeping
-    if (_barberSleeping){
+    if (_barberSleeping || _nbChairs == 0){
         addClientAction(clientId, CA::BARBER_SLEEPING);
         _barber.notifyOne();
         _clientToBarberChair = true;
@@ -150,7 +168,10 @@ void PcoSalon::goToSleep() {
 void PcoSalon::pickNextClient() {
     _mutex.lock();
 
-    // A client is already in the working chair
+    while(_clientEntering)
+        _clientEnteringSalon.wait(&_mutex);
+
+    // A client is already in / going to the working chair
     if (!_barberChairFree || _clientToBarberChair) {
         _mutex.unlock();
         return;

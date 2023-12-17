@@ -6,6 +6,14 @@
  * |_|     \_____\____/  |____|\___/____|____/
  */
 
+/**
+* @file client.cpp
+* @brief Implementation of the Client class methods
+* @author Aubry Mangold <aubry.mangold@heig-vd.ch>
+* @author Timothée Van Hove <timothee.vanhove@heig-vd.ch>
+* @date 2023-12-17
+ */
+
 #include "client.h"
 
 #include <unistd.h>
