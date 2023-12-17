@@ -27,10 +27,11 @@ void Barber::run() {
             _interface->consoleAppendTextBarber("Pas de client, je vais dormir");
             _salon->goToSleep();
             continue;
+        }else{
+            _interface->consoleAppendTextBarber("J'appelle le cient suivant");
+            _salon->pickNextClient();
         }
 
-        _interface->consoleAppendTextBarber("J'appelle le cient suivant");
-        _salon->pickNextClient();
         _interface->consoleAppendTextBarber("J'attends que le client vienne sur la chaise");
         _salon->waitClientAtChair();
         _interface->consoleAppendTextBarber("Je vais coiffer le client");

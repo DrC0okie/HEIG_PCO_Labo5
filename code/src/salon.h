@@ -12,10 +12,44 @@
 
 #include "salonbarberinterface.h"
 #include "salonclientinterface.h"
+#include "utils/barberActions.h"
+#include "utils/clientActions.h"
+
+typedef ClientAction CA;
+typedef BarberAction BA;
 
 class Salon : public SalonBarberInterface, public SalonClientInterface
 {
+
+    std::vector<BA> barberDebugData;
+    std::vector<std::vector<CA>> clientsDebugData;
+
 public:
+
+/********************************************
+     * testing methods *
+*******************************************/
+
+void addBarberAction(BA value) {
+    barberDebugData.push_back(value);
+}
+
+void addClientAction(unsigned clientId, CA value) {
+    // Ensure the vector is large enough
+    if (clientId >= clientsDebugData.size()) {
+        clientsDebugData.resize(clientId + 1);
+    }
+    clientsDebugData[clientId].push_back(value);
+}
+
+[[nodiscard]] const std::vector<BA>& getBarberDebugData() const {
+    return barberDebugData;
+}
+
+[[nodiscard]] const std::vector<std::vector<CA>>& getClientsDebugData() const {
+    return clientsDebugData;
+}
+
     /*!
      * \brief endService Permet au barbier de fermer le salon
      */

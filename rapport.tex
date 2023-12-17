@@ -59,10 +59,34 @@
     \begin{lstlisting}[caption={The shared section access routine.}, captionpos=b, label=lst:1]
     \end{lstlisting}
 
+    \section{Automated Testing of Barber and Clients Sequences}
 
-    \section{Tests}
+    To ensure the correctness of our simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are crucial for verifying that the sequences adhere to predefined, valid patterns that reflect the intended logic of our program.
 
-    Cas testés pour la synchronistation :
+    \subsection{Defining Valid Sequences}
+
+    Our testing strategy involves defining "valid sequences" for both the barber and the clients. These sequences are essentially templates of actions that the barber and clients are expected to perform in a specific order under normal operating conditions.
+
+    These valid sequences are defined as arrays of enums, representing distinct actions. By using enums, we provide a readable representation of each action in the sequences.
+
+    \subsection{Recording Sequences During Execution}
+
+    As the simulation runs, each action taken by the barber or a client is recorded into a vector. This is accomplished by placing "push back" operations within the PcoSalon class's methods, which capture the sequence of actions as they occur in real-time. These vectors serve as the actual sequences to be tested against our predefined valid sequences at the end of the simulation.
+
+    \subsection{Analyzing and Validating the Sequences}
+
+    Once the simulation ends, the testing phase begins. Here, we analyze the recorded sequences to ensure they align with our predefined valid sequences. The analysis involves segmenting the sequences and then systematically comparing each segment against the valid sequences.
+
+    For the barber, whose sequences can vary based on situational factors (such as whether the barber was asleep or awake at the start of the sequence), the segmentation is based on the consistent ending action in each cycle. For clients, whose actions form repeatable loops, the segmentation is based on the start of each loop.
+
+    If a recorded sequence matches any of the valid sequences, it is deemed correct. If not, the sequence is flagged as incorrect, indicating a potential issue in the simulation logic or sequence implementation.
+
+
+    \section{Manual tests}
+
+    The following tests have been executed both on our local machines and on the reds VM. These are manual tests, as we did not write automated ones for those cases
+
+    Synchronization tests :
     \begin{itemize}
         \item Plus de clients(8) que de sièges(2)
         \item Plus de sièges(8) que de clients(2)
@@ -75,7 +99,7 @@
         \item Beaucoup de clients (30) et de sièges(20)
     \end{itemize}
 
-    Terminaison du programme pendant les animations suivantes :
+    Program end tests :
     \begin{itemize}
         \item Un client entre dans le salon
         \item Un client va s'asseoir
@@ -87,18 +111,18 @@
         \item Le barbier se réveille
     \end{itemize}
 
-    L'ordre d'entrée des clients est bien respecté :
+    Client entrance order tests :
     \begin{itemize}
         \item Lorqu'il y a un seul client
         \item Lorsqu'il y a plusieurs clients(8)
     \end{itemize}
 
-    L'ordre de prise en charge par le baribier est respecté
+    Hair cut order test:
     \begin{itemize}
         \item Lorsqu'il y a plusieurs clients(20) et sièges (10)
     \end{itemize}
 
-    Autres tests :
+    Other tests :
     \begin{itemize}
         \item Les clients ne font un tour que s'il n'y a plus de place dans le salon
         \item Les clients ne rentrent chez eux que si le salon est fermé

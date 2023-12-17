@@ -7,13 +7,13 @@
  */
 // Rien à modifier
 
-#include <iostream>
-#include <pcosynchro/pcologger.h>
-
 #include "application.h"
+#include <pcosynchro/pcologger.h>
+#include <iostream>
 #include "barber.h"
 #include "client.h"
 #include "pcosalon.h"
+#include "utils/tests.h"
 
 Application::Application(GraphicSalonInterface *interface, unsigned nbPlaces, unsigned nbClients)
     : _interface(interface), _nbPlaces(nbPlaces), _nbClients(nbClients)
@@ -57,6 +57,12 @@ void Application::run()
 
     // Attendre la fin du thread barbier
     barber->join();
+
+    // Run test functions
+    std::vector<BA> barberDebugData = salon->getBarberDebugData();
+    std::vector<std::vector<CA>> clientsDebugData = salon->getClientsDebugData();
+    Tests::testClientsSequence(clientsDebugData);
+    Tests::testBarberSequence(barberDebugData);
 
     logger() << "Le programme est terminé..." << std::endl;
 }

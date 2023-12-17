@@ -17,6 +17,7 @@
 #include "utils/graphicsaloninterface.h"
 
 class PcoSalon : public Salon {
+
     public:
     PcoSalon(GraphicSalonInterface *interface, unsigned int nb_chairs);
 
