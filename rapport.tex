@@ -45,30 +45,44 @@
 
     \section{Introduction}
 
+    The following report describes the conception and implementation of a barbershop simulation designed to practice the Mesa monitor paradigm.
+    The simulation involves a barber and multiple clients, each represented by a separate thread.
+    The barber and clients operate independently but require careful synchronization to ensure correct behavior.
+    The simulation is implemented in C++ using the PcoSynchro library for synchronization primitives and the Qt framework for the graphical user interface.
 
     \section{Analysis}
-    Multiple threads—representing clients and a barber—operate independently but require careful synchronization to ensure correct behavior. The core challenge lies in managing the interactions between these threads, which include clients entering and exiting the salon, waiting for their turn, and the barber providing services and managing idle time. The barber and clients are modeled as separate threads, each executing its own logic. The salon operates with limited capacity, necessitating a mechanism to control client access and service order.
+    Multiple threads representing clients and a barber operate independently but require careful synchronization to ensure correct behavior. The core challenge lies in managing the interactions between these threads, which include clients entering and exiting the salon, waiting for their turn, and the barber providing services and managing idle time. The barber and clients are modeled as separate threads, each executing its own logic. The salon operates with limited capacity, necessitating a mechanism to control client access and service order.
 
-    The Mesa monitor concept must be used to synchronize the barber and client threads. It involves condition variables and a mutex, offering a structured approach to manage shared resources and thread coordination. Several condition variables are used to signal different states such as the availability of the barber, a client waiting for a haircut, the completion of a haircut. A mutex lock must be utilized to protect shared variables and ensure atomicity in operations. Threads acquire the lock before checking or modifying shared states and release it during waiting to avoid deadlock scenarios.
+    The Mesa monitor concept must be used to synchronize the barber and client threads.
+    It involves condition variables, a synchronisation primitive used together with a mutex to block threads from accessing shared resources.
+    Several condition variables are used to signal different states such as the availability of the barber, a client waiting for a haircut or the completion of a haircut.
+    A mutex lock must be utilized to protect shared variables and ensure atomicity in operations.
+    Threads acquire the lock before checking or modifying shared states and release it during the wait to avoid deadlock scenarios.
 
-    Incorporating animations to reflect real-time actions add a layer of complexity to the synchronization scheme. Animations in the simulation are blocking, meaning the executing thread is held up until the animation completes. Because, the mutex is systematically unlocked before the animation and re-locked after, this disrupt the synchronization flow, as the order of the execution is different before and after the animation.
-
-    \pagebreak
+    The incorporation of animations to reflect real-time actions add a layer of complexity to the synchronization scheme.
+    Animations in the simulation are blocking, which means that the executing thread is held up until the animation completes.
+    Because the mutex is systematically unlocked before the animation and re-locked afterwards, this mechanisms disrupts the synchronization flow, as the order of the execution is different before and after the animation.
+    % TODO: what does the last sentence mean?
 
     \section{Conception}
 
     \subsection{Capacity and waiting seats management}
 
-    We decided that the salon's capacity should reflect the total number of clients that it can treat at any given time, which includes the number of waiting seats plus one additional seat for the barber chair. This approach ensures that the salon operates at full capacity, maximizing resource utilization.
+    It was decided that the salon's capacity should reflect the total number of clients that it can treat at any given time, which includes the number of waiting seats plus one additional seat for the barber chair.
+    This approach ensures that the salon operates at full capacity, maximizing resource utilization.
 
-    For managing the waiting seats, we implemented a rotation system that does not strictly adhere to a first-come, first-sit basis. Instead, clients entering the salon may occupy any available waiting seat, determined by a rotating index. This index is managed using a modulo operation, which cycles through the waiting seats. It is important to note that this approach means clients might not always sit in the first free chair as no specific seating order was mandated.
+    As for the management of the waiting seats, we implemented a rotation system that does not strictly adhere to a first-come, first-sit basis.
+    Instead, clients entering the salon may occupy any available waiting seat, determined by a rotating index.
+    This index is managed using a modulo operation, which cycles through the waiting seats.
+    It is important to note that this approach means clients might not always sit in the first free chair as no specific seating order was mandated.
 
     \subsection{Barber Cycle}
 
-    The Barber class encapsulates the behavior of the barber in the simulation. The barber's primary responsibilities are to provide services to clients and manage idle time. The operational cycle is as follows:
+    The Barber class encapsulates the behavior of a barber in the simulation.
+    The barber's responsibilities are to provide services to clients and manage idle time.
+    The operational cycle is as follows:
 
     \begin{lstlisting}[caption={The barber operational cycle}, captionpos=b, label=lst:1]
-
     void Barber::run() {
         while (_salon->isInService() || _salon->getNbClient() > 0){
             _interface->consoleAppendTextBarber("Je suis pret a accueillir un client");
@@ -88,7 +102,6 @@
         }
         _interface->consoleAppendTextBarber("La journee est terminee, a demain !");
     }
-
     \end{lstlisting}
 
     \begin{itemize}
@@ -99,14 +112,12 @@
 
     This cycle repeats until the salon is no longer in service, at which point the barber concludes the workday.
 
-    \pagebreak
-
     \subsection{Clients Cycle}
 
-    The Client class represents the behavior of clients visiting the salon. Clients attempt to access the salon and receive haircuts :
+    The Client class represents the behavior of clients visiting the salon.
+    Clients will attempt to access the salon and receive a haircut :
 
     \begin{lstlisting}[caption={The clients operational cycle}, captionpos=b, label=lst:2]
-
     void Client::run() {
         while (_salon->isInService()) {
             _interface->consoleAppendTextClient(_clientId, "Je regarde s'il y a de la place dans le salon");
@@ -128,23 +139,32 @@
 
     \begin{itemize}
         \item \textbf{Attempting Salon Access}: Each client checks if there is available space in the salon. If the salon is full, the client will walk around and retry after some time.
-        \item \textbf{Receiving Haircut}: Once access to the salon is granted, the client either goes to the barber's chair for a haircut, or goes to a waiting chair. This involves waiting for the barber to complete the haircut, and the management of a ticketing system to keep the right order.
+        \item \textbf{Receiving Haircut}: Once access to the salon is granted, the client either goes to the barber's chair for a haircut, or goes to a waiting chair. This involves waiting for the barber to complete the haircut, and the management of a ticketing system to keep the track of the order of arrival.
         \item \textbf{Post-Haircut}: After the haircut, the client simulates waiting for hair to grow before potentially attempting another visit.
     \end{itemize}
 
-    The client's cycle continues as long as the salon is in service. Once the salon closes, the last clients in the salon wait for the barber to finish the cut, then the clients go home.
+    The client's cycle continues as long as the salon is in service.
+    Once the salon closes, the barber takes care of the remaining clients but doesn't accept any new ones.
+    Once all the clients have been treated and gone home, the barber finishes his day.
 
     \subsection{Guarantee the client order}
 
-    In the initial stages of designing the barbershop simulation, a queue data structure was considered to manage the order in which clients would be served, adhering to the FIFO principle. However, we realized that the waiting process in the Mesa monitor essentially forms a "virtual queue," where clients wait for their turn based on the condition variables. This insight led to the adoption of a simpler ticketing system.
+    In the initial stages of designing the barbershop simulation, a queue data structure was considered to manage the order in which clients would be served, adhering to the FIFO principle.
+    However, we realized that the waiting process in the Mesa monitor essentially forms a "virtual queue", where clients wait for their turn based on the condition variables.
+    This insight led to the adoption of a simpler ticketing system.
 
-    The ticketing system works by assigning a unique ticket number to each client as they attempt to access the salon. This ticket number determines the client's position in the service order. Clients check if their ticket number matches the next number to be served (\texttt{\_nextTicket}). If not, they wait in the \texttt{accessSalon} method, effectively queuing in a virtual waiting line. Once the barber completes a haircut, the \texttt{\_nextTicket} number is incremented, and the corresponding client is notified to proceed for their service. This method ensures that clients are served in the exact order of their arrival, maintaining the FIFO. This ticketing approach takes advantage of the existing synchronization of the Mesa monitor without the need for an explicit queue data structure.
-
-    \pagebreak
+    The ticketing system works by assigning a unique ticket number to each client as they attempt to access the salon.
+    This ticket number determines the client's position in the service order.
+    Clients check if their ticket number matches the next number to be served (\texttt{\_nextTicket}).
+    If not, they wait in the \texttt{accessSalon} method, effectively queuing in a virtual waiting line.
+    Once the barber completes a haircut, the \texttt{\_nextTicket} number is incremented, and the corresponding client is notified to proceed for their service.
+    This method ensures that clients are served in the exact order of their arrival, maintaining the FIFO.
+    This ticketing approach takes advantage of the existing synchronization of the Mesa monitor without the need for an explicit queue data structure.
 
     \subsection{Mesa monitor implementation}
 
-    The Mesa monitor paradigm is characterized by the use of condition variables along with a mutex to safely access and modify shared state. A mutual exclusion lock ensures atomic access to the shared state of the salon, such as the number of clients inside, the status of the barber chair, and the ticketing system.
+    The Mesa monitor paradigm is characterized by the use of condition variables along with a mutex to safely access and modify shared state.
+    A mutual exclusion lock ensures atomic access to the shared state of the salon, such as the number of clients inside, the status of the barber chair, and the ticketing system.
 
     Several condition variables are used to manage different synchronization aspects:
     \begin{itemize}
@@ -156,50 +176,72 @@
     \end{itemize}
 
     \subsection{Program termination}
-    The simulation uses a shared boolean flag \texttt{\_inService} to indicate whether the salon is still operational. When the program needs to end, this variable is set to false.If the barber is asleep (indicated by \texttt{\_barberSleeping}), the salon must wake him up to process the termination signal. This is achieved by signaling the \texttt{\_barber} condition variable. Upon waking up or after completing a haircut, the barber checks the \texttt{\_inService} flag. If the flag is set to false, the barber concludes his work by treating the remaining clients. Clients, in their execution cycle, continuously check the \texttt{\_inService} flag before attempting to access salon. If the salon is no longer in service, they go home and then exit their loop.
+    The simulation uses a shared boolean flag \texttt{\_inService} to indicate whether the salon is still operational.
+    When the program needs to end, this variable is set to false.
+    If the barber is asleep (indicated by \texttt{\_barberSleeping}), the salon must wake him up to process the termination signal.
+    This is achieved by signaling the \texttt{\_barber} condition variable.
+    Upon waking up or after completing a haircut, the barber checks the \texttt{\_inService} flag.
+    If the flag is set to false, the barber concludes his work by treating the remaining clients.
+    Clients, in their execution cycle, continuously check the \texttt{\_inService} flag before attempting to access salon.
+    If the salon is no longer in service, they go home and then exit their loop.
 
-    The main application ensures that all client and barber threads are joined after setting the \texttt{\_inService} flag to false. This joining process waits for each thread to finish its execution, ensuring that all threads conclude properly before the program terminates.
+    The main application ensures that all client and barber threads are joined after setting the \texttt{\_inService} flag to false.
+    This joining process waits for each thread to finish its execution, ensuring that all threads conclude properly before the program terminates.
 
     \section{Automated Testing of Barber and Clients Sequences}
 
-    To ensure the correctness of the simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are important for verifying that the sequences adhere to predefined patterns given in the instructions.
+    To ensure the correctness of the simulation,  automated tests targeting the behavioral sequences of both the barber and the clients were implemented.
+    The class can be found in the \texttt{utils/tests.cpp} file.
+    These tests are executed at the end of every simulation where they assert that the sequence of events observed in the simulation matches the patterns passed in the instructions.
 
     \subsection{Defining Valid Sequences}
 
-    Our testing strategy involves defining "valid sequences" for both the barber and the clients. These sequences are essentially templates of actions that the barber and clients are expected to perform in a specific order under normal operating conditions. These valid sequences are defined as arrays of enums, representing distinct actions. By using enums, we provide a readable representation of each action in the sequences.
+    The testing strategy involves the definition of "valid sequences" for both the barber and the clients.
+    These sequences are chains of actions that the barber and clients are expected to perform in a specific order under normal operating conditions.
+    These valid sequences are defined as arrays of enums, representing distinct actions.
+    By using enums, we provide a readable representation of each action in the sequences.
 
     \subsection{Recording Sequences During Execution}
 
-    As the simulation runs, each action taken by the barber or a client is recorded into a vector. This is accomplished by placing "push back" operations within the PcoSalon class's methods, which capture the sequence of actions as they occur in real-time. These vectors serve as the actual sequences to be tested against our predefined valid sequences at the end of the simulation.
+    As the simulation runs, each action taken by the barber or a client is recorded into a vector.
+    This is accomplished by placing "push back" operations within the PcoSalon class's methods, which capture the sequence of actions as they occur in real-time.
+    These vectors serve as the actual sequences to be tested against our predefined valid sequences at the end of the simulation.
 
     \subsection{Analyzing and Validating the Sequences}
 
-    Once the simulation ends, the testing phase begins. Here, we analyze the recorded sequences to ensure they align with our predefined valid sequences. The analysis involves segmenting the sequences and then systematically comparing each segment against the valid sequences.
+    Once the simulation ends, the testing phase begins.
+    Here, we analyze the recorded sequences to ensure they align with our predefined valid sequences.
+    The analysis involves segmenting the sequences and then systematically comparing each segment against the valid sequences.
 
-    For the barber, whose sequences can vary based on situational factors (such as whether the barber was asleep or awake at the start of the sequence), the segmentation is based on the consistent ending action in each cycle. For clients, whose actions form repeatable loops, the segmentation is based on the start of each loop.
+    For the barber, whose sequences can vary based on situational factors (such as whether the barber was asleep or awake at the start of the sequence), the segmentation is based on the consistent ending action in each cycle.
+    For clients, whose actions form repeatable loops, the segmentation is based on the start of each loop.
 
-    If a recorded sequence matches any of the valid sequences, it is deemed correct. If not, the sequence is flagged as incorrect, indicating a potential issue in the simulation logic or sequence implementation.
-
-    \pagebreak
+    If a recorded sequence matches any of the valid sequences, it is deemed correct.
+    If not, the sequence is flagged as incorrect, indicating a potential issue in the simulation logic or sequence implementation.
 
     \section{Manual testing}
 
-    Because the automated tests can only verify the operating cycle of the barber and clients, we also have to do manual testing.
+    The automated tests are not sufficient to ensure the correctness of the simulation.
+    Independent tests were also done to assert that the simulation behaves as expected in a given situation.
+    All the checks described in these sections were manually operated by running the simulation and observing the behavior of the barber and the clients.
+    All tests have successfully passed.
 
-    Synchronization tests :
+    \subsection{Synchronization tests}
+    The following tests were done to assert that the synchronization between the barber and the clients in a given situation is correct :
     \begin{itemize}
-        \item More clients(8) than waiting seats(2)
-        \item More waiting seats(8) than chairs(2)
-        \item Same number of waiting seats and clients (4)
-        \item No waiting seats and 1 client
-        \item No waiting seat and multiple clients (8)
-        \item No waiting seats and no clients
-        \item multiple waiting seats(4) and only 1 client
-        \item 1 waiting seat and multiple clients (20)
-        \item A lot of clients (30) and waiting seats (20)
+        \item With more clients (8) than waiting seats (2)
+        \item With more waiting seats (8) than chairs (2)
+        \item With identical number of waiting seats and clients (4)
+        \item With no waiting seats and a single client
+        \item With no waiting seat and multiple clients (8)
+        \item With no waiting seats and no clients
+        \item With multiple waiting seats (4) and a single client
+        \item With a single waiting seat and multiple clients (20)
+        \item With a lot of clients (30) and waiting seats (20)
     \end{itemize}
 
-    Program termination tests :
+    \subsection{Program termination tests}
+    The following tests were done to assert that the program terminates correctly in a given situation :
     \begin{itemize}
         \item While a client enters the salon
         \item While a client seats on a waiting chair
@@ -211,18 +253,21 @@
         \item While the barber is waking up
     \end{itemize}
 
-    Client entrance order tests :
+    \subsection{Client entrance tests}
+    The following tests were done to assert that the client entrance in the salon is correct in a given situation :
     \begin{itemize}
-        \item When there is 1 client
-        \item When there are multiple clients(8)
+        \item When there is a single client
+        \item When there are multiple clients (8)
     \end{itemize}
 
-    Hair cut order test:
+    \subsection{Hair cut order tests}
+    The following tests were done to assert that the hair cut order is correct in a given situation :
     \begin{itemize}
         \item When there are multiple clients (20) and waiting seats (10)
     \end{itemize}
 
-    Other tests :
+    \subsection{Miscellaneous tests}
+    The following tests were done to assert that the simulation is correct in a given situation :
     \begin{itemize}
         \item The clients go for a walk only when the salon is full
         \item The clients go home only when the salon is closed
@@ -232,11 +277,17 @@
     \end{itemize}
 
     \subsection{Edge case}
-    We discovered an edge case that we had to test for. Most of the time, when the simulation begins, the barber goes to sleep as there are no client in the salon yet. However, in rare scenarios, the barber is awake when the first client comes into the salon. In this case, we had to make the barber wait until the client is fully inside the salon (wait that the animation is finished) before picking the next client, otherwise, the barber would pick the nex ticket, while no client have already taken a ticket, leading to a deadlock. To test for this case, we simply added a sleep(1) before the main while loop in the barber::run method.
-    Note that when this edge case arrise, we have chosen to put the first client directly on the barber chair, as we found that making the client in the waiting chair useless. In addition, this choice allows an other client to enter the salon.
+    Typically, at the start of the simulation, the barber enters a sleep state due to the absence of clients in the salon.
+    However, there are infrequent situations where the barber is already awake when the first client enters the salon.
+    In such a scenario, the barber must wait until the client has fully entered the salon and the entrance animation has completed before selecting the next client.
+    If the barber were to select the next ticket prematurely, it would lead to a deadlock as no client has yet taken a ticket.
+    To account for this edge case in our tests, we introduced a one-second delay before the main loop in the \texttt{barber::run} method.
+    It's worth noting that when this edge case occurs, we've opted to seat the first client directly on the barber chair, rendering the waiting chair unnecessary.
+    This decision also facilitates the entry of another client into the salon.
 
     \section{Conclusion}
-
+In conclusion, the simulation successfully implemented the Mesa monitor and ticket lock synchronization mechanisms to manage multiple threads accessing shared resources and needing to coordinate their actions.
+The simulation was validated by both manual and automated tests to ensure the correctness of the synchronization and the simulation logic.
     \section*{Appendix}
 
     \section{Appendix name}
