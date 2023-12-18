@@ -47,21 +47,115 @@
 
 
     \section{Analysis}
+    Multiple threads—representing clients and a barber—operate independently but require careful synchronization to ensure correct behavior. The core challenge lies in managing the interactions between these threads, which include clients entering and exiting the salon, waiting for their turn, and the barber providing services and managing idle time. The barber and clients are modeled as separate threads, each executing its own logic. The salon operates with limited capacity, necessitating a mechanism to control client access and service order.
 
+    The Mesa monitor concept must be used to synchronize the barber and client threads. It involves condition variables and a mutex, offering a structured approach to manage shared resources and thread coordination. Several condition variables are used to signal different states such as the availability of the barber, a client waiting for a haircut, the completion of a haircut. A mutex lock must be utilized to protect shared variables and ensure atomicity in operations. Threads acquire the lock before checking or modifying shared states and release it during waiting to avoid deadlock scenarios.
+
+    Incorporating animations to reflect real-time actions add a layer of complexity to the synchronization scheme. Animations in the simulation are blocking, meaning the executing thread is held up until the animation completes. Because, the mutex is systematically unlocked before the animation and re-locked after, this disrupt the synchronization flow, as the order of the execution is different before and after the animation.
+
+    \pagebreak
 
     \section{Conception}
 
-    % TODO 1-2 explicative sentences by Tim
+    \subsection{Barber Cycle}
 
-    \section{Implementation}
+    The Barber class encapsulates the behavior of the barber in the simulation. The barber's primary responsibilities are to provide services to clients and manage idle time. The operational cycle is as follows:
 
-    % Listing
-    \begin{lstlisting}[caption={The shared section access routine.}, captionpos=b, label=lst:1]
+    \begin{lstlisting}[caption={The barber operational cycle}, captionpos=b, label=lst:1]
+
+    void Barber::run() {
+        while (_salon->isInService() || _salon->getNbClient() > 0){
+            _interface->consoleAppendTextBarber("Je suis prêt à accueillir un client");
+            if (_salon->getNbClient() == 0) {
+                _interface->consoleAppendTextBarber("Pas de client, je vais dormir");
+                _salon->goToSleep();
+                continue;
+            }else{
+                _interface->consoleAppendTextBarber("J'appelle le client suivant");
+                _salon->pickNextClient();
+            }
+
+            _interface->consoleAppendTextBarber("J'attends que le client vienne sur la chaise");
+            _salon->waitClientAtChair();
+            _interface->consoleAppendTextBarber("Je vais coiffer le client");
+            _salon->beautifyClient();
+        }
+        _interface->consoleAppendTextBarber("La journée est terminée, à demain !");
+    }
+
     \end{lstlisting}
+
+    \begin{itemize}
+    \item \textbf{Checking for Clients}: The barber continuously checks if clients are present in the salon. This check determines the barber's subsequent actions.
+    \item \textbf{Sleeping when Idle}: If no clients are present, the barber goes to sleep. The \texttt{goToSleep()} method involves waiting on a condition variable until a client arrives and wakes the barber up.
+    \item \textbf{Serving Clients}: When clients are present, the barber calls \texttt{pickNextClient()} to select the next client for service. The barber then waits for the client to be ready on the working chair (\texttt{waitClientAtChair()}) before proceeding with the haircut (\texttt{beautifyClient()}).
+    \end{itemize}
+
+    This cycle repeats until the salon is no longer in service, at which point the barber concludes the workday.
+
+    \pagebreak
+
+    \subsection{Clients Cycle}
+
+    The Client class represents the behavior of clients visiting the salon. Clients attempt to access the salon and receive haircuts :
+
+    \begin{lstlisting}[caption={The clients operational cycle}, captionpos=b, label=lst:2]
+
+    void Client::run() {
+        while (_salon->isInService()) {
+            _interface->consoleAppendTextClient(_clientId, "Je regarde s'il y a de la place dans le salon");
+            if (!_salon->accessSalon(_clientId)) {
+                _interface->consoleAppendTextClient(_clientId, "Le salon est plein, je reviens plus tard");
+                _salon->walkAround(_clientId);
+                continue;
+            }
+            _interface->consoleAppendTextClient(_clientId, "Je vais sur la chaise du barbier");
+            _salon->goForHairCut(_clientId);
+            _interface->consoleAppendTextClient(_clientId, "J'attends que mes cheveux repoussent");
+            _salon->waitingForHairToGrow(_clientId);
+        }
+        _interface->consoleAppendTextClient(_clientId, "Le salon est fermé... Zut !");
+        _salon->goHome(_clientId);
+    }
+
+    \end{lstlisting}
+
+    \begin{itemize}
+        \item \textbf{Attempting Salon Access}: Each client checks if there is available space in the salon. If the salon is full, the client will walk around and retry after some time.
+        \item \textbf{Receiving Haircut}: Once access to the salon is granted, the client either goes to the barber's chair for a haircut, or goes to a waiting chair. This involves waiting for the barber to complete the haircut, and the management of a ticketing system to keep the right order.
+        \item \textbf{Post-Haircut}: After the haircut, the client simulates waiting for hair to grow before potentially attempting another visit.
+    \end{itemize}
+
+    The client's cycle continues as long as the salon is in service. Once the salon closes, the last clients in the salon wait for the barber to finish the cut, then the clients go home.
+
+    \subsection{Guarantee the client order}
+
+    In the initial stages of designing the barbershop simulation, a queue data structure was considered to manage the order in which clients would be served, adhering to the FIFO principle. However, we realized that the waiting process in the Mesa monitor essentially forms a "virtual queue," where clients wait for their turn based on the condition variables. This insight led to the adoption of a simpler ticketing system.
+
+    The ticketing system works by assigning a unique ticket number to each client as they attempt to access the salon. This ticket number determines the client's position in the service order. Clients check if their ticket number matches the next number to be served (\texttt{\_nextTicket}). If not, they wait in the \texttt{accessSalon} method, effectively queuing in a virtual waiting line. Once the barber completes a haircut, the \texttt{\_nextTicket} number is incremented, and the corresponding client is notified to proceed for their service. This method ensures that clients are served in the exact order of their arrival, maintaining the FIFO. This ticketing approach takes advantage of the existing synchronization of the Mesa monitor without the need for an explicit queue data structure.
+
+    \pagebreak
+
+    \subsection{Mesa monitor implementation}
+
+    The Mesa monitor paradigm is characterized by the use of condition variables along with a mutex to safely access and modify shared state. A mutual exclusion lock ensures atomic access to the shared state of the salon, such as the number of clients inside, the status of the barber chair, and the ticketing system.
+
+    Several condition variables are used to manage different synchronization aspects:
+    \begin{itemize}
+        \item \texttt{\_barber}: Signaled when a client needs to wake up the sleeping barber.
+        \item \texttt{\_client}: Notified when it's time for the next client to proceed for their haircut.
+        \item \texttt{\_clientOnWorkingChair}: Used to synchronize the client's movement to the barber chair.
+        \item \texttt{\_beautifyDone}: Signaled when the barber completes a haircut.
+        \item \texttt{\_clientEnteringSalon}: Used for rare cases when the barber is awake, and a client is entering the salon.
+    \end{itemize}
+
+    Clients check if the salon is full. If full, they leave and retry later. If the salon is not full, clients either wake up the sleeping barber then proceed directly to the barber chair, or take a ticket and wait. Clients wait for the barber to complete the haircut of the current client, signaled by \texttt{\_beautifyDone}. Post-haircut, clients release the barber chair and wait for hair to grow.
+
+    The barber goes to sleep if no clients are present, waiting on the \texttt{\_barber} condition variable. The barber picks the next client and waits for them to be ready on the working chair. Once the client is ready, the barber performs the haircut, signaling \texttt{\_beautifyDone} upon completion.
 
     \section{Automated Testing of Barber and Clients Sequences}
 
-    To ensure the correctness of our simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are crucial for verifying that the sequences adhere to predefined, valid patterns that reflect the intended logic of our program.
+    To ensure the correctness of the simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are crucial for verifying that the sequences adhere to predefined, valid patterns that reflect the intended logic of our program.
 
     \subsection{Defining Valid Sequences}
 
@@ -84,7 +178,7 @@
 
     \section{Manual tests}
 
-    The following tests have been executed both on our local machines and on the reds VM. These are manual tests, as we did not write automated ones for those cases
+    Because the automated tests can only verify the operating cycle of the barber and clients, we also have to do manual testing.
 
     Synchronization tests :
     \begin{itemize}
@@ -140,10 +234,6 @@
     \section*{Appendix}
 
     \section{Appendix name}
-    \begin{figure}[!htb]
-        \centering
-        \includegraphics[width=0.6\textwidth]{./doc/assets/}
-        \caption{Train route 1}
-    \end{figure}
+
 
 \end{document}
