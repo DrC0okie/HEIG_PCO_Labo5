@@ -57,6 +57,12 @@
 
     \section{Conception}
 
+    \subsection{Capacity and waiting seats management}
+
+    We decided that the salon's capacity should reflect the total number of clients that it can treat at any given time, which includes the number of waiting seats plus one additional seat for the barber chair. This approach ensures that the salon operates at full capacity, maximizing resource utilization.
+
+    For managing the waiting seats, we implemented a rotation system that does not strictly adhere to a first-come, first-sit basis. Instead, clients entering the salon may occupy any available waiting seat, determined by a rotating index. This index is managed using a modulo operation, which cycles through the waiting seats. It is important to note that this approach means clients might not always sit in the first free chair as no specific seating order was mandated.
+
     \subsection{Barber Cycle}
 
     The Barber class encapsulates the behavior of the barber in the simulation. The barber's primary responsibilities are to provide services to clients and manage idle time. The operational cycle is as follows:
@@ -65,7 +71,7 @@
 
     void Barber::run() {
         while (_salon->isInService() || _salon->getNbClient() > 0){
-            _interface->consoleAppendTextBarber("Je suis prêt à accueillir un client");
+            _interface->consoleAppendTextBarber("Je suis pret a accueillir un client");
             if (_salon->getNbClient() == 0) {
                 _interface->consoleAppendTextBarber("Pas de client, je vais dormir");
                 _salon->goToSleep();
@@ -80,7 +86,7 @@
             _interface->consoleAppendTextBarber("Je vais coiffer le client");
             _salon->beautifyClient();
         }
-        _interface->consoleAppendTextBarber("La journée est terminée, à demain !");
+        _interface->consoleAppendTextBarber("La journee est terminee, a demain !");
     }
 
     \end{lstlisting}
@@ -114,7 +120,7 @@
             _interface->consoleAppendTextClient(_clientId, "J'attends que mes cheveux repoussent");
             _salon->waitingForHairToGrow(_clientId);
         }
-        _interface->consoleAppendTextClient(_clientId, "Le salon est fermé... Zut !");
+        _interface->consoleAppendTextClient(_clientId, "Le salon est ferme... Zut !");
         _salon->goHome(_clientId);
     }
 
@@ -149,19 +155,18 @@
         \item \texttt{\_clientEnteringSalon}: Used for rare cases when the barber is awake, and a client is entering the salon.
     \end{itemize}
 
-    Clients check if the salon is full. If full, they leave and retry later. If the salon is not full, clients either wake up the sleeping barber then proceed directly to the barber chair, or take a ticket and wait. Clients wait for the barber to complete the haircut of the current client, signaled by \texttt{\_beautifyDone}. Post-haircut, clients release the barber chair and wait for hair to grow.
+    \subsection{Program termination}
+    The simulation uses a shared boolean flag \texttt{\_inService} to indicate whether the salon is still operational. When the program needs to end, this variable is set to false.If the barber is asleep (indicated by \texttt{\_barberSleeping}), the salon must wake him up to process the termination signal. This is achieved by signaling the \texttt{\_barber} condition variable. Upon waking up or after completing a haircut, the barber checks the \texttt{\_inService} flag. If the flag is set to false, the barber concludes his work by treating the remaining clients. Clients, in their execution cycle, continuously check the \texttt{\_inService} flag before attempting to access salon. If the salon is no longer in service, they go home and then exit their loop.
 
-    The barber goes to sleep if no clients are present, waiting on the \texttt{\_barber} condition variable. The barber picks the next client and waits for them to be ready on the working chair. Once the client is ready, the barber performs the haircut, signaling \texttt{\_beautifyDone} upon completion.
+    The main application ensures that all client and barber threads are joined after setting the \texttt{\_inService} flag to false. This joining process waits for each thread to finish its execution, ensuring that all threads conclude properly before the program terminates.
 
     \section{Automated Testing of Barber and Clients Sequences}
 
-    To ensure the correctness of the simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are crucial for verifying that the sequences adhere to predefined, valid patterns that reflect the intended logic of our program.
+    To ensure the correctness of the simulation, we implemented automated tests targeting the behavioral sequences of both the barber and the clients. These tests are important for verifying that the sequences adhere to predefined patterns given in the instructions.
 
     \subsection{Defining Valid Sequences}
 
-    Our testing strategy involves defining "valid sequences" for both the barber and the clients. These sequences are essentially templates of actions that the barber and clients are expected to perform in a specific order under normal operating conditions.
-
-    These valid sequences are defined as arrays of enums, representing distinct actions. By using enums, we provide a readable representation of each action in the sequences.
+    Our testing strategy involves defining "valid sequences" for both the barber and the clients. These sequences are essentially templates of actions that the barber and clients are expected to perform in a specific order under normal operating conditions. These valid sequences are defined as arrays of enums, representing distinct actions. By using enums, we provide a readable representation of each action in the sequences.
 
     \subsection{Recording Sequences During Execution}
 
@@ -175,54 +180,55 @@
 
     If a recorded sequence matches any of the valid sequences, it is deemed correct. If not, the sequence is flagged as incorrect, indicating a potential issue in the simulation logic or sequence implementation.
 
+    \pagebreak
 
-    \section{Manual tests}
+    \section{Manual testing}
 
     Because the automated tests can only verify the operating cycle of the barber and clients, we also have to do manual testing.
 
     Synchronization tests :
     \begin{itemize}
-        \item Plus de clients(8) que de sièges(2)
-        \item Plus de sièges(8) que de clients(2)
-        \item Le même nombre de clients que de sièges(4)
-        \item Pas de siege et un seul client
-        \item Pas de siege et plusieurs clients (8)
-        \item Pas de siege et pas de client
-        \item Plusieurs sièges(4) et un seul client
-        \item Un seul siège et plusieurs clients(20)
-        \item Beaucoup de clients (30) et de sièges(20)
+        \item More clients(8) than waiting seats(2)
+        \item More waiting seats(8) than chairs(2)
+        \item Same number of waiting seats and clients (4)
+        \item No waiting seats and 1 client
+        \item No waiting seat and multiple clients (8)
+        \item No waiting seats and no clients
+        \item multiple waiting seats(4) and only 1 client
+        \item 1 waiting seat and multiple clients (20)
+        \item A lot of clients (30) and waiting seats (20)
     \end{itemize}
 
-    Program end tests :
+    Program termination tests :
     \begin{itemize}
-        \item Un client entre dans le salon
-        \item Un client va s'asseoir
-        \item Un client se fait couper les cheveux
-        \item Un client se fait couper les cheveux et personne n'attend
-        \item Un client attend que ses cheveux poussent
-        \item Un client fait un tour
-        \item Le barbier dort
-        \item Le barbier se réveille
+        \item While a client enters the salon
+        \item While a client seats on a waiting chair
+        \item While a client have his/her hair cut and other clients are waiting
+        \item While a client have his/her hair cut and nobody is waiting
+        \item While a client wait for his/her hair to grow
+        \item While a client go for a walk
+        \item While the barber is asleep
+        \item While the barber is waking up
     \end{itemize}
 
     Client entrance order tests :
     \begin{itemize}
-        \item Lorqu'il y a un seul client
-        \item Lorsqu'il y a plusieurs clients(8)
+        \item When there is 1 client
+        \item When there are multiple clients(8)
     \end{itemize}
 
     Hair cut order test:
     \begin{itemize}
-        \item Lorsqu'il y a plusieurs clients(20) et sièges (10)
+        \item When there are multiple clients (20) and waiting seats (10)
     \end{itemize}
 
     Other tests :
     \begin{itemize}
-        \item Les clients ne font un tour que s'il n'y a plus de place dans le salon
-        \item Les clients ne rentrent chez eux que si le salon est fermé
-        \item Le barbier va se coucher quand il n'y a pas de clients
-        \item Lorsque le barbier dort et qu'un client est entré dans le salon, il le réveille
-        \item Le barbier s'arrête quand il n'y a plus de clients et que la journée est terminée
+        \item The clients go for a walk only when the salon is full
+        \item The clients go home only when the salon is closed
+        \item The barber goes to sleep when the salon is empty
+        \item When the barber is asleep, the first client fully in the salon wakes him up
+        \item The barber stops working when the salon closes and is empty
     \end{itemize}
 
     \subsection{Edge case}
