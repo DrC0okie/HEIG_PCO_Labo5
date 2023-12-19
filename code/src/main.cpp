@@ -13,8 +13,8 @@
 #include "application.h"
 #include "utils/graphicsaloninterface.h"
 
-constexpr unsigned int NB_CLIENTS = 30;
-constexpr unsigned int NB_SIEGES = 20;
+constexpr unsigned int NB_CLIENTS = 2;
+constexpr unsigned int NB_SIEGES = 3;
 
 int main(int argc, char *argv[])
 {
