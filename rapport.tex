@@ -51,7 +51,10 @@
     The simulation is implemented in C++ using the PcoSynchro library for synchronization primitives and the Qt framework for the graphical user interface.
 
     \section{Analysis}
-    Multiple threads representing clients and a barber operate independently but require careful synchronization to ensure correct behavior. The core challenge lies in managing the interactions between these threads, which include clients entering and exiting the salon, waiting for their turn, and the barber providing services and managing idle time. The barber and clients are modeled as separate threads, each executing its own logic. The salon operates with limited capacity, necessitating a mechanism to control client access and service order.
+    Multiple threads representing clients and a barber operate independently but require careful synchronization to ensure correct behavior.
+    The core challenge lies in managing the interactions between these threads, which include clients entering and exiting the salon, waiting for their turn, and the barber providing services and managing idle time.
+    The barber and clients are modeled as separate threads, each executing its own logic.
+    The salon operates with limited capacity, necessitating a mechanism to control client access and service order.
 
     The Mesa monitor concept must be used to synchronize the barber and client threads.
     It involves condition variables, a synchronisation primitive used together with a mutex to block threads from accessing shared resources.
@@ -61,8 +64,7 @@
 
     The incorporation of animations to reflect real-time actions add a layer of complexity to the synchronization scheme.
     Animations in the simulation are blocking, which means that the executing thread is held up until the animation completes.
-    Because the mutex is systematically unlocked before the animation and re-locked afterwards, this mechanisms disrupts the synchronization flow, as the order of the execution is different before and after the animation.
-    % TODO: what does the last sentence mean?
+    Because the mutex is systematically unlocked before the animation and re-locked afterwards, this animation mechanism disrupts the synchronization flow, as the order of the execution is different before and after the animation.
 
     \section{Conception}
 
@@ -286,11 +288,7 @@
     This decision also facilitates the entry of another client into the salon.
 
     \section{Conclusion}
-In conclusion, the simulation successfully implemented the Mesa monitor and ticket lock synchronization mechanisms to manage multiple threads accessing shared resources and needing to coordinate their actions.
-The simulation was validated by both manual and automated tests to ensure the correctness of the synchronization and the simulation logic.
-    \section*{Appendix}
-
-    \section{Appendix name}
-
+    In conclusion, the simulation successfully implemented the Mesa monitor and ticket lock synchronization mechanisms to manage multiple threads accessing shared resources and needing to coordinate their actions.
+    The simulation was validated by both manual and automated tests to ensure the correctness of the synchronization and the simulation logic.
 
 \end{document}
